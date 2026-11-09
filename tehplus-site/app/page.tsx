@@ -107,7 +107,7 @@ export default function Home() {
   };
 
   const faqs = [
-    { q: "Что делать, если аптечка или огнетушитель просрочены?", a: "По регламенту ЕАИСТО аптечка и огнетушитель должны иметь действующий срок годности. Вы можете приобрести новые в любом автомагазине или прямо у нас на пункте перед началом осмотра." },
+    { q: "Нужны ли аптечка, огнетушитель и знак?", a: <>Технический эксперт проверяет машину по списку из 55 параметров. <strong>Наличие аптечки, огнетушителя и знака в этом списке нет.</strong></> },
     { q: "Нужно ли мыть машину перед заездом на линию?", a: "Да, автомобиль должен быть чистым. Особое внимание уделите читаемости государственных номеров и чистоте фар — камеры диагностической линии должны корректно зафиксировать транспортное средство." },
     { q: "Пройду ли я техосмотр с трещиной на лобовом стекле?", a: "Трещины в зоне очистки стеклоочистителя со стороны водителя не допускаются. Если трещина находится со стороны пассажира или вне зоны работы дворников — техосмотр пройти можно." },
     { q: "Можно ли оплатить услуги банковской картой?", a: "Да, мы принимаем оплату наличными, картами любых банков и по QR-коду (СБП). Для юридических лиц доступна оплата по счету с предоставлением полного пакета закрывающих документов." }
@@ -116,7 +116,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#F9FAFB] text-gray-900 font-sans selection:bg-[#8BBA82] selection:text-white overflow-x-hidden">
       
-      {/* Шапка (Адаптирована под мобильные) */}
+      {/* Шапка */}
       <header className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-gray-200/50 transition-all">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-4 flex justify-between items-center">
           <div className="text-xl md:text-2xl font-black tracking-tight text-[#61403A] flex items-center gap-1.5 md:gap-2">
@@ -134,10 +134,11 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Первый экран */}
-      <section className="relative pt-28 pb-16 md:pt-40 md:pb-32 px-4 md:px-6 overflow-hidden">
+      {/* Первый экран (уменьшен нижний отступ) */}
+      <section className="relative pt-24 pb-10 md:pt-32 md:pb-20 px-4 md:px-6 overflow-hidden">
         <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 rounded-full bg-[#8BBA82]/10 blur-3xl"></div>
-        <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-10 md:gap-16 items-center relative z-10">
+        <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-6 md:gap-8 items-center relative z-10">
+          
           <div className="space-y-6 md:space-y-8">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-1.5 rounded-full bg-white border border-gray-200 text-[#61403A] text-[10px] md:text-xs font-bold uppercase tracking-wider shadow-sm">
               <span className="relative flex h-2 w-2 md:h-2.5 md:w-2.5">
@@ -157,9 +158,9 @@ export default function Home() {
                 Выбрать время
               </a>
             </div>
-            <div className="mt-4 md:mt-6 flex flex-col gap-1 text-xs md:text-sm font-medium text-gray-600 bg-white p-4 rounded-xl border border-gray-100 shadow-sm w-full sm:w-max">
+            <div className="mt-4 md:mt-6 flex flex-col gap-1 text-sm md:text-base font-medium text-gray-600 bg-white p-4 rounded-xl border border-gray-100 shadow-sm w-full sm:w-max">
                <div className="flex items-center gap-2 text-[#61403A] font-bold mb-1">
-                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                  Часы работы
                </div>
                <div>Пн - Сб • <span className="text-gray-900">8.00 - 18.00</span></div>
@@ -167,7 +168,7 @@ export default function Home() {
             </div>
           </div>
           
-          <div className="relative h-64 md:h-[500px] w-full rounded-3xl bg-white border border-gray-200 shadow-2xl shadow-gray-200/50 overflow-hidden">
+          <div className="relative h-80 md:h-[600px] w-full rounded-3xl bg-white border border-gray-200 shadow-2xl shadow-gray-200/50 overflow-hidden">
              <Image 
                src="/foto_fasad.png" 
                alt="Фасад пункта техосмотра" 
@@ -179,9 +180,9 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Наши преимущества */}
-      <section id="services" className="py-16 md:py-24 max-w-7xl mx-auto overflow-hidden">
-        <div className="text-center mb-10 md:mb-16 px-6">
+      {/* Наши преимущества (уменьшены отступы) */}
+      <section id="services" className="pt-4 pb-12 md:pt-8 md:pb-16 max-w-7xl mx-auto overflow-hidden">
+        <div className="text-center mb-8 md:mb-12 px-6">
           <h2 className="text-3xl md:text-4xl font-extrabold text-[#61403A]">Все для постановки на учет</h2>
           <p className="text-gray-500 mt-3 font-medium text-base md:text-lg leading-relaxed">
             Всё что нужно от вас:<br />
@@ -190,7 +191,7 @@ export default function Home() {
           </p>
         </div>
         
-        <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 px-6 pb-8 md:pb-0 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-x-12 md:gap-y-16 hide-scrollbar">
+        <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 px-6 pb-4 md:pb-0 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-x-12 md:gap-y-12 hide-scrollbar">
           {[
             { 
               title: 'Сделаем за 30 минут', 
@@ -236,14 +237,14 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 3D Галерея */}
-      <section className="py-16 md:py-20 bg-white overflow-hidden border-t border-gray-200">
+      {/* 3D Галерея (уменьшены отступы) */}
+      <section className="py-12 md:py-16 bg-white overflow-hidden border-t border-gray-200">
         <div className="max-w-7xl mx-auto px-6 mb-6 md:mb-8 text-center">
           <h2 className="text-3xl md:text-4xl font-extrabold text-[#61403A]">Современная линия</h2>
           <p className="text-gray-500 mt-2 md:mt-3 font-medium text-sm md:text-base">Оборудование, сертифицированное Росстандартом</p>
         </div>
 
-        <div className="relative w-full max-w-7xl mx-auto h-[250px] sm:h-[350px] md:h-[500px] mt-6 md:mt-8 flex items-center justify-center">
+        <div className="relative w-full max-w-7xl mx-auto h-[250px] sm:h-[350px] md:h-[500px] mt-6 flex items-center justify-center">
           <button type="button" onClick={handlePrev} className="absolute left-1 md:left-[calc(50%-360px)] top-1/2 -translate-y-1/2 z-[100] text-[#61403A] drop-shadow-[0_0_15px_rgba(255,255,255,0.9)] hover:scale-125 transition-transform duration-200 cursor-pointer p-2 md:p-4 focus:outline-none">
             <svg className="w-10 h-10 md:w-16 md:h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
           </button>
@@ -274,12 +275,11 @@ export default function Home() {
         </div>
       </section>
 
-
-      {/* Тарифы и Форма */}
+      {/* Тарифы и Форма (уменьшены отступы) */}
       <section className="bg-white border-t border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-16 md:py-24 grid lg:grid-cols-2 gap-12 md:gap-16 lg:gap-24 items-start">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-12 md:py-16 grid lg:grid-cols-2 gap-10 md:gap-16 items-start">
           
-          <div className="space-y-10 md:space-y-12">
+          <div className="space-y-8 md:space-y-12">
             <div>
               <h2 id="prices" className="text-3xl md:text-4xl font-extrabold mb-6 md:mb-8 text-[#61403A]">Прозрачные тарифы</h2>
               <div className="space-y-3 md:space-y-4">
@@ -288,7 +288,7 @@ export default function Home() {
                   { cat: 'M1', name: 'Легковые автомобили', price: 'от 1203 ₽' },
                   { cat: 'N1', name: 'Грузовики массой не более 3,5 т', price: 'от 1315 ₽' }
                 ].map((item, i) => (
-                  <div key={i} className="flex justify-between items-center p-5 md:p-6 bg-gray-50 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors">
+                  <div key={i} className="flex justify-between items-center p-4 md:p-6 bg-gray-50 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         <span className="px-2 py-0.5 bg-gray-200 text-gray-600 text-[10px] md:text-xs font-bold rounded uppercase tracking-wider">{item.cat}</span>
@@ -302,32 +302,31 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Форма бронирования (Адаптированные отступы) */}
-          <div id="booking" className="bg-[#61403A] p-6 md:p-12 rounded-3xl text-white shadow-2xl relative overflow-hidden">
+          <div id="booking" className="bg-[#61403A] p-6 md:p-10 rounded-3xl text-white shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none"></div>
             <div className="relative z-10">
               <h2 className="text-2xl md:text-3xl font-extrabold mb-2 md:mb-3">Бронирование времени</h2>
-              <p className="text-[#8BBA82] mb-8 md:mb-10 font-medium opacity-90 text-sm md:text-base">
+              <p className="text-[#8BBA82] mb-6 md:mb-8 font-medium opacity-90 text-sm md:text-base">
                 Выберите удобное время, и мы закрепим его за вашим автомобилем.
               </p>
               
-              <form onSubmit={handleSubmit} className="space-y-5 md:space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5">
                 <div>
                   <label className="block text-[10px] md:text-xs font-bold uppercase tracking-wider text-white/60 mb-2 pl-1">Номер машины</label>
                   <input required type="text" name="carNumber" value={formData.carNumber} onChange={handleChange}
-                    className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/30 focus:outline-none focus:border-[#8BBA82] focus:ring-1 focus:ring-[#8BBA82] uppercase text-sm md:text-base" placeholder="А 123 АА 161" />
+                    className="w-full p-3.5 md:p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/30 focus:outline-none focus:border-[#8BBA82] focus:ring-1 focus:ring-[#8BBA82] uppercase text-sm md:text-base" placeholder="А 123 АА 161" />
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-[10px] md:text-xs font-bold uppercase tracking-wider text-white/60 mb-2 pl-1">Телефон</label>
                     <input required type="tel" name="phone" value={formData.phone} onChange={handleChange}
-                      className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/30 focus:outline-none focus:border-[#8BBA82] focus:ring-1 focus:ring-[#8BBA82] text-sm md:text-base" placeholder="+7 (___) ___-__-__" />
+                      className="w-full p-3.5 md:p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/30 focus:outline-none focus:border-[#8BBA82] focus:ring-1 focus:ring-[#8BBA82] text-sm md:text-base" placeholder="+7 (___) ___-__-__" />
                   </div>
                   <div>
                     <label className="block text-[10px] md:text-xs font-bold uppercase tracking-wider text-white/60 mb-2 pl-1">Категория</label>
                     <select name="category" value={formData.category} onChange={handleChange}
-                      className="w-full p-4 bg-[#61403A] border border-white/20 rounded-xl text-white focus:outline-none focus:border-[#8BBA82] text-sm md:text-base">
+                      className="w-full p-3.5 md:p-4 bg-[#61403A] border border-white/20 rounded-xl text-white focus:outline-none focus:border-[#8BBA82] text-sm md:text-base">
                       <option value="M1 Легковые автомобили">M1 Легковые авто</option>
                       <option value="L Мотоциклы">L Мотоциклы</option>
                       <option value="N1 Грузовики (до 3,5т)">N1 Грузовики (до 3,5 т)</option>
@@ -338,14 +337,12 @@ export default function Home() {
                 <div>
                    <label className="block text-[10px] md:text-xs font-bold uppercase tracking-wider text-white/60 mb-2 pl-1">Выберите день</label>
                    <input required type="date" name="date" value={formData.date} onChange={handleChange}
-                     className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:border-[#8BBA82] [color-scheme:dark] text-sm md:text-base" />
+                     className="w-full p-3.5 md:p-4 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:border-[#8BBA82] [color-scheme:dark] text-sm md:text-base" />
                 </div>
 
-                {/* ОБНОВЛЕННАЯ СЕТКА ВРЕМЕНИ ДЛЯ ТЕЛЕФОНОВ */}
                 {formData.date && (
                   <div className="animate-fade-in-up">
                      <label className="block text-[10px] md:text-xs font-bold uppercase tracking-wider text-white/60 mb-3 pl-1">Доступные слоты</label>
-                     {/* 3 колонки на смартфонах, 4-5 на больших экранах */}
                      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 md:gap-3 max-h-56 md:max-h-48 overflow-y-auto pr-2 custom-scrollbar">
                         {getAvailableTimeSlots().map(slot => (
                           <button
@@ -378,10 +375,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* FAQ */}
-      <section id="faq" className="py-16 md:py-24 px-4 md:px-6 bg-[#F9FAFB]">
+      {/* FAQ (уменьшены отступы) */}
+      <section id="faq" className="py-12 md:py-16 px-4 md:px-6 bg-[#F9FAFB]">
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-extrabold mb-10 md:mb-12 text-center text-[#61403A]">Частые вопросы</h2>
+          <h2 className="text-3xl md:text-4xl font-extrabold mb-8 md:mb-10 text-center text-[#61403A]">Частые вопросы</h2>
           <div className="space-y-3 md:space-y-4">
             {faqs.map((faq, index) => (
               <div key={index} className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
@@ -400,15 +397,13 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Контакты и Карта (Адаптированная высота карты) */}
-      {/* Контакты и Идеальная Карта */}
-      <section id="contacts" className="py-16 md:py-24 bg-white border-t border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 grid lg:grid-cols-3 gap-8 md:gap-12">
+      {/* Контакты и Карта (уменьшены отступы) */}
+      <section id="contacts" className="py-12 md:py-16 bg-white border-t border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 grid lg:grid-cols-3 gap-8 md:gap-10">
           
-          {/* Левая колонка: Контакты + Кнопка Маршрута */}
-          <div className="lg:col-span-1 flex flex-col justify-between space-y-8 bg-[#F9FAFB] p-6 md:p-10 rounded-3xl border border-gray-100">
+          <div className="lg:col-span-1 flex flex-col justify-between space-y-8 bg-[#F9FAFB] p-6 md:p-8 rounded-3xl border border-gray-100">
             <div>
-              <h2 className="text-3xl font-extrabold text-[#61403A] mb-8">Ждем вас</h2>
+              <h2 className="text-3xl font-extrabold text-[#61403A] mb-6">Ждем вас</h2>
               <div className="space-y-6 text-gray-600">
                 <div>
                   <div className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Адрес СТО</div>
@@ -426,7 +421,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Акцентная кнопка автоматического маршрута */}
             <div className="pt-6 mt-6 border-t border-gray-200">
               <a 
                 href="https://yandex.ru/maps/?rtext=~Ростов-на-Дону,+улица+Доватора,+271с1&rtt=auto" 
@@ -443,11 +437,9 @@ export default function Home() {
             </div>
           </div>
           
-          {/* Правая колонка: Карта без рамок */}
-          {/* Правая колонка: Карта без рамок (из Конструктора Яндекса) */}
           <div className="lg:col-span-2 h-[350px] md:h-auto min-h-[400px] bg-gray-100 rounded-3xl overflow-hidden relative isolate transform-gpu shadow-sm border border-gray-200">
              <iframe 
-               src="https://yandex.ru/map-widget/v1/?um=constructor%3A009b3fe9901a3701834297769ac0653821d629ea2a870450b2fdf9bd86a0c8be&;source=constructor" 
+               src="https://yandex.ru/map-widget/v1/?um=constructor%3A009b3fe9901a3701834297769ac0653821d629ea2a870450b2fdf9bd86a0c8be&source=constructor" 
                className="absolute inset-0 w-full h-full z-10 border-0"
                allowFullScreen={true}
              ></iframe>
@@ -457,7 +449,7 @@ export default function Home() {
       </section>
       
       {/* Футер */}
-      <footer className="bg-gray-900 text-gray-400 py-10 md:py-12 text-xs md:text-sm">
+      <footer className="bg-gray-900 text-gray-400 py-8 md:py-10 text-xs md:text-sm">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 md:gap-8">
           <div className="space-y-2 text-center md:text-left w-full md:w-auto">
              <p className="text-gray-300 font-bold">ООО "ТЕХПЛЮС" • ИНН 6168125681 • ОГРН 1256100025697</p>
@@ -470,7 +462,6 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* Глобальные стили */}
       <style dangerouslySetInnerHTML={{__html: `
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
