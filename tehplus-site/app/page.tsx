@@ -8,6 +8,8 @@ import "react-datepicker/dist/react-datepicker.css";
 import { ru } from "date-fns/locale";
 import { motion, useMotionValue, useSpring, useTransform, useMotionTemplate, Variants } from "framer-motion";
 
+import { LiquidGlassFilter, LiquidGlassLayer, LiquidButton } from "@/components/ui/liquid-glass";
+
 registerLocale("ru", ru);
 
 // Основной строгий шрифт
@@ -15,13 +17,12 @@ const manrope = Manrope({ subsets: ['cyrillic', 'latin'], weight: ['400', '500',
 
 // Элегантный шрифт с завитушками для акцентов
 const playfair = Playfair_Display({ subsets: ['cyrillic', 'latin'], style: ['italic'], weight: ['600'] });
-// Указываем тип Variants для каждого объекта:
+
 const fadeInLeft: Variants = { hidden: { opacity: 0, x: -50 }, visible: { opacity: 1, x: 0, transition: { duration: 0.7, ease: "easeOut" } } };
 const fadeInRight: Variants = { hidden: { opacity: 0, x: 50 }, visible: { opacity: 1, x: 0, transition: { duration: 0.7, ease: "easeOut" } } };
 const fadeInUp: Variants = { hidden: { opacity: 0, y: 40 }, visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: "easeOut" } } };
 const zoomIn: Variants = { hidden: { opacity: 0, scale: 0.9 }, visible: { opacity: 1, scale: 1, transition: { duration: 0.6, ease: "easeOut" } } };
 const staggerContainer: Variants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.15 } } };
-const floatingAnimation = { y: ["-5px", "5px"], transition: { y: { duration: 3.5, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" } } };
 
 // === КАСТОМНЫЙ КОМПОНЕНТ ДЛЯ 3D МАГНИТНЫХ КАРТОЧЕК (BENTO GRID) ===
 const TiltCard = ({ children, className }: { children: React.ReactNode, className?: string }) => {
@@ -112,8 +113,25 @@ export default function Home() {
   });
   const [status, setStatus] = useState('');
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  
+  // === ДОБАВЛЕНО: Состояние и логика для простой галереи ===
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
-  const galleryPhotos = [1, 2, 3, 4, 5];
+
+  const galleryPhotos = [
+    { src: "/photo/ph-1.jpeg", title: "Линия осмотра" },
+    { src: "/photo/ph-2.jpeg", title: "Диагностика ходовой" },
+    { src: "/photo/ph-3.jpeg", title: "Проверка оптики" },
+    { src: "/photo/ph-4.jpeg", title: "Пункт ТЕХПЛЮС" },
+  ];
+
+  const handleNext = () => {
+    setCurrentPhotoIndex((prev) => (prev + 1) % galleryPhotos.length);
+  };
+
+  const handlePrev = () => {
+    setCurrentPhotoIndex((prev) => (prev - 1 + galleryPhotos.length) % galleryPhotos.length);
+  };
+  // =====================================================================
 
   const pricingPlans = [
     { id: 'L Мотоциклы', cat: 'L', name: 'Мотоциклы', price: 'от 423 ₽' },
@@ -125,16 +143,6 @@ export default function Home() {
     window.scrollTo(0, 0);
     if (window.location.hash) window.history.replaceState(null, '', window.location.pathname);
   }, []);
-
-  const handleNext = (e?: React.MouseEvent) => {
-    if (e) { e.preventDefault(); e.stopPropagation(); }
-    setCurrentPhotoIndex((prev) => (prev + 1) % galleryPhotos.length);
-  };
-
-  const handlePrev = (e?: React.MouseEvent) => {
-    if (e) { e.preventDefault(); e.stopPropagation(); }
-    setCurrentPhotoIndex((prev) => (prev - 1 + galleryPhotos.length) % galleryPhotos.length);
-  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -172,7 +180,7 @@ export default function Home() {
     }
 
     setStatus('Отправка...');
-    const formattedDate = formData.date.toISOString().split('T')[0];
+    const formattedDate = formData.date ? formData.date.toISOString().split('T')[0] : '';
     
     try {
       const response = await fetch('http://127.0.0.1:8000/api/leads', {
@@ -197,12 +205,11 @@ export default function Home() {
 
   return (
     <main className={`min-h-screen bg-[#F8F9F7] text-[#151C2B] selection:bg-[#8BBA82] selection:text-white overflow-x-hidden relative ${manrope.className}`}>
-      
-      {/* ФОН (Без анимации пульсации, зафиксирован в максимальной яркости, с усиленными коричневыми волнами) */}
+      <LiquidGlassFilter />
+      {/* ФОН */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#8BBA8220_1px,transparent_1px),linear-gradient(to_bottom,#8BBA8220_1px,transparent_1px)] bg-[size:40px_40px]"></div>
         
-        {/* Усиленные коричневые волны по бокам */}
         <svg className="absolute top-[5%] left-0 h-[80vh] w-auto opacity-[0.14] text-[#61403A] drop-shadow-2xl" viewBox="0 0 200 800" fill="currentColor">
            <path d="M0,0 C150,120 220,280 150,480 C90,680 40,740 0,800 Z" />
         </svg>
@@ -214,7 +221,6 @@ export default function Home() {
           <path d="M1440,160 C1120,0, 1020,320, 720,160 C420,0, 320,300, 0,160" />
         </svg>
 
-        {/* Статичные яркие цветовые пятна (без animate-pulse) */}
         <div className="absolute top-[-10%] right-[-5%] w-[700px] h-[700px] rounded-full bg-gradient-to-br from-[#8BBA82] to-[#EEF3ED] opacity-65 blur-[90px]"></div>
         <div className="absolute bottom-[10%] left-[-10%] w-[600px] h-[600px] rounded-full bg-gradient-to-tr from-[#61403A] to-[#8BBA82] opacity-[0.25] blur-[110px]"></div>
         <div className="absolute top-[35%] left-[-15%] w-[500px] h-[500px] rounded-full bg-[#8BBA82] opacity-35 blur-[90px]"></div>
@@ -233,7 +239,7 @@ export default function Home() {
             <a href="#faq" className="hover:text-[#151C2B] transition-colors">FAQ</a>
             <a href="#contacts" className="hover:text-[#151C2B] transition-colors">Контакты</a>
           </nav>
-          <a href="tel:+70000000000" className="flex items-center gap-2 bg-[#F8F9F7] border border-[#E8EBE8] hover:bg-[#EEF3ED] text-[#151C2B] font-bold text-sm md:text-base px-4 py-2 md:px-5 md:py-2.5 rounded-full transition-colors whitespace-nowrap">
+          <a href="tel:+79882556547" className="flex items-center gap-2 bg-[#F8F9F7] border border-[#E8EBE8] hover:bg-[#EEF3ED] text-[#151C2B] font-bold text-sm md:text-base px-4 py-2 md:px-5 md:py-2.5 rounded-full transition-colors whitespace-nowrap">
             <svg className="w-4 h-4 text-[#8BBA82]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
             +7 (988) 255-65-47
           </a>
@@ -241,83 +247,76 @@ export default function Home() {
       </motion.header>
 
       {/* ПЕРВЫЙ ЭКРАН */}
-      <section className="relative pt-[150px] pb-16 md:pt-[190px] md:pb-24 px-6 md:px-12 max-w-[1440px] mx-auto grid md:grid-cols-[45%_55%] gap-10 md:gap-14 items-center z-10 overflow-hidden">
-        
-        {/* Левая колонка */}
-        <motion.div initial="hidden" animate="visible" variants={fadeInLeft} className="space-y-6 md:space-y-6 pr-0 md:pr-4">
+      <section className="relative pt-[130px] pb-12 sm:pt-[150px] sm:pb-16 md:pt-[190px] md:pb-24 px-6 md:px-12 max-w-[1440px] mx-auto grid lg:grid-cols-[45%_55%] gap-8 md:gap-14 items-center z-10 overflow-hidden">
+        <motion.div initial="hidden" animate="visible" variants={fadeInLeft} className="space-y-5 md:space-y-6 pr-0 md:pr-4">
           <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-white border border-[#E8EBE8] text-[#151C2B] text-xs md:text-sm font-bold shadow-sm relative overflow-hidden">
             <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#8BBA82]"></div>
             <svg className="w-4 h-4 text-[#8BBA82] ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
-            Аккредитация РСА: № [ХХХХХ]
+            Аккредитация РСА
           </div>
           
-          <h1 className="text-[42px] sm:text-[54px] md:text-[66px] font-bold tracking-tight leading-[1.1] text-[#151C2B]">
+          <h1 className="text-[36px] sm:text-[48px] md:text-[66px] font-bold tracking-tight leading-[1.1] text-[#151C2B]">
             Официальный <br className="hidden sm:block"/>
-            <span className={`${playfair.className} text-[#61403A] text-[56px] sm:text-[72px] md:text-[88px] font-semibold leading-[0.9] block pt-3 pb-4 drop-shadow-sm`}>
+            <span className={`${playfair.className} text-[#61403A] text-[48px] sm:text-[64px] md:text-[88px] font-semibold leading-[0.9] block pt-2 pb-3 md:pt-3 md:pb-4 drop-shadow-sm`}>
               техосмотр
             </span>
             в Ростове
           </h1>
           
-          <p className="text-[17px] md:text-[19px] text-[#657080] max-w-md leading-relaxed font-medium">
+          <p className="text-[16px] md:text-[19px] text-[#657080] max-w-md leading-relaxed font-medium">
             Аккредитованный пункт. Моментальная передача данных в ЕАИСТО для успешной регистрации в ГИБДД. Выполним работу за 30 минут. 200 метров до МРЭО.
           </p>
           
-          <div className="flex flex-col xl:flex-row items-start xl:items-center gap-6 pt-4">
-            <a href="#booking" className="bg-[#8BBA82] hover:bg-[#77a66f] text-white font-bold py-5 px-9 rounded-full flex items-center gap-3 transition-all shadow-[0_10px_30px_rgba(139,186,130,0.4)] hover:-translate-y-1 w-full xl:w-auto justify-center group text-[17px] relative z-20">
+          <div className="flex flex-col xl:flex-row items-start xl:items-center gap-6 pt-2 md:pt-4">
+            <LiquidButton 
+              href="#booking" 
+              className="bg-[#8BBA82]/85 hover:bg-[#8BBA82] text-white shadow-[0_10px_30px_rgba(139,186,130,0.4)] hover:-translate-y-1 w-full xl:w-auto group z-20"
+            >
               Выбрать время
-              <span className="bg-white text-[#8BBA82] w-8 h-8 rounded-full flex items-center justify-center group-hover:translate-x-1 transition-transform">
+              <span className="bg-white text-[#8BBA82] w-8 h-8 rounded-full flex items-center justify-center group-hover:translate-x-1 transition-transform shadow-sm">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
               </span>
-            </a>
+            </LiquidButton>
             
-            <div className="flex items-center gap-5 bg-gradient-to-br from-white/60 to-white/10 backdrop-blur-2xl px-7 py-5 rounded-[24px] border border-white/80 shadow-[0_12px_40px_rgba(30,40,30,0.08)] relative overflow-hidden group w-full xl:w-auto">
-               <div className="absolute left-0 top-0 bottom-0 w-2 bg-[#8BBA82]"></div>
-               <div className="w-14 h-14 rounded-full bg-white/70 backdrop-blur-md flex items-center justify-center text-[#8BBA82] shrink-0 group-hover:scale-110 transition-transform shadow-sm border border-white/60 relative z-10">
-                 <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-               </div>
-               <div className="font-semibold text-[#151C2B] leading-snug relative z-10">
-                 <div className="text-[#61403A] font-black mb-1.5 text-[14px] uppercase tracking-wider">Режим работы</div>
-                 <div className="text-[17px] mb-0.5">Пн–Сб: <span className="text-[#151C2B]/70 font-medium">8:00 – 18:00</span></div>
-                 <div className="text-[17px]">Вс: <span className="text-[#151C2B]/70 font-medium">10:00 – 17:00</span></div>
-               </div>
+            <div className="flex items-center gap-5 bg-white/35 px-6 py-4 md:px-7 md:py-5 rounded-[24px] border border-white/80 relative overflow-hidden group w-full xl:w-auto">
+              <LiquidGlassLayer roundedClass="rounded-[24px]" />
+              <div className="absolute left-0 top-0 bottom-0 w-2 bg-[#8BBA82] z-10"></div>
+              <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/80 flex items-center justify-center text-[#8BBA82] shrink-0 group-hover:scale-110 transition-transform shadow-sm border border-white/70 relative z-10">
+                <svg className="w-6 h-6 md:w-7 md:h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              </div>
+              <div className="font-semibold text-[#151C2B] leading-snug relative z-10">
+                <div className="text-[#61403A] font-black mb-1.5 text-[13px] md:text-[14px] uppercase tracking-wider">Режим работы</div>
+                <div className="text-[15px] md:text-[17px] mb-0.5">Пн–Сб: <span className="text-[#151C2B]/75 font-medium">8:00 – 18:00</span></div>
+                <div className="text-[15px] md:text-[17px]">Вс: <span className="text-[#151C2B]/75 font-medium">10:00 – 17:00</span></div>
+              </div>
             </div>
           </div>
         </motion.div>
         
-        {/* Правая колонка: Фотография */}
-        <motion.div initial="hidden" animate="visible" variants={fadeInRight} className="relative w-full h-[450px] md:h-[650px] mt-8 md:mt-0 isolate -ml-4 md:-ml-8">
-           <svg width="0" height="0" className="absolute">
-             <defs>
-               <clipPath id="organic-hero" clipPathUnits="objectBoundingBox">
-                 <path d="M 0.15,0 L 0.92,0 C 0.97,0, 1,0.03, 1,0.08 L 1,0.92 C 1,0.97, 0.97,1, 0.92,1 L 0.15,1 C 0.05,1, 0.05,0.9, 0.08,0.8 C 0.15,0.6, 0.00,0.4, 0.08,0.2 C 0.12,0.1, 0.08,0, 0.15,0 Z" />
-               </clipPath>
-             </defs>
-           </svg>
+        <motion.div initial="hidden" animate="visible" variants={fadeInRight} className="relative w-full h-[380px] sm:h-[450px] md:h-[600px] lg:h-[650px] mt-6 lg:mt-0 isolate lg:-ml-4 xl:-ml-8">
+          <div className="absolute inset-0 bg-[#61403A] -translate-x-3 translate-y-4 md:-translate-x-5 md:translate-y-6 rounded-[28px] md:rounded-[40px] z-0"></div>
+          <div className="relative w-full h-full z-10 rounded-[28px] md:rounded-[40px] overflow-hidden bg-gray-100 shadow-[0_20px_40px_rgba(97,64,58,0.15)]">
+            <Image src="/hero.png" alt="Фасад пункта техосмотра" fill className="object-cover object-[25%_center] z-0 brightness-105 saturate-[1.10]" priority />
+          </div>
+          
+          <div className="absolute top-4 right-4 sm:top-6 sm:right-6 md:top-8 md:right-8 overflow-hidden bg-white/35 px-4 py-3 sm:px-5 sm:py-3.5 rounded-[20px] md:rounded-[24px] flex items-center gap-3 md:gap-4 z-20 border border-white/80">
+            <LiquidGlassLayer roundedClass="rounded-[20px] md:rounded-[24px]" />
+            <div className="relative z-10 bg-white/80 p-2 sm:p-2.5 rounded-full text-[#8BBA82] shadow-sm border border-white/80">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+            </div>
+            <div className="relative z-10 flex flex-col">
+              <span className="text-[#151C2B] font-extrabold text-[14px] sm:text-[15px] leading-tight">Ростов-на-Дону</span>
+              <span className="text-[#151C2B]/90 font-bold text-[12px] sm:text-[13px] mt-0.5">ул. Доватора, 271</span>
+            </div>
+          </div>
 
-           <div className="relative w-full h-full z-10" style={{ filter: 'drop-shadow(0 20px 40px rgba(97,64,58,0.15))' }}>
-             <div className="absolute inset-0 bg-[#61403A] -translate-x-3 translate-y-4 md:-translate-x-5 md:translate-y-6 z-0" style={{ clipPath: 'url(#organic-hero)', WebkitClipPath: 'url(#organic-hero)' }}></div>
-             <div className="w-full h-full relative z-10 bg-gray-100" style={{ clipPath: 'url(#organic-hero)', WebkitClipPath: 'url(#organic-hero)' }}>
-               <Image src="/hero.png" alt="Фасад пункта техосмотра" fill className="object-cover object-[25%_center] z-0 brightness-105 saturate-[1.10]" priority />
-             </div>
-           </div>
-           
-           <div className="absolute top-8 right-8 bg-gradient-to-br from-white/50 to-white/10 backdrop-blur-2xl px-5 py-3.5 rounded-[24px] shadow-[0_8px_32px_rgba(0,0,0,0.12)] flex items-center gap-4 z-20 border border-white/60">
-             <div className="bg-white/60 p-2.5 rounded-full text-[#8BBA82] backdrop-blur-md shadow-sm border border-white/60">
-               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-             </div>
-             <div className="flex flex-col drop-shadow-[0_2px_10px_rgba(255,255,255,0.8)]">
-               <span className="text-[#151C2B] font-extrabold text-[15px] leading-tight">Ростов-на-Дону</span>
-               <span className="text-[#151C2B]/90 font-bold text-[13px] mt-0.5">ул. Доватора, 271</span>
-             </div>
-           </div>
-
-           <div className="absolute bottom-8 right-8 bg-gradient-to-br from-white/50 to-white/10 backdrop-blur-2xl px-6 py-4 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.12)] flex items-center gap-3 z-20 border border-white/60">
-             <div className="bg-white/60 p-2 rounded-full backdrop-blur-md border border-white/60 shadow-sm">
+          <div className="absolute bottom-4 left-4 right-4 sm:bottom-6 sm:right-6 sm:left-auto md:bottom-8 md:right-8 overflow-hidden bg-white/35 px-5 py-3.5 sm:px-6 sm:py-4 rounded-[20px] md:rounded-[24px] flex items-center gap-3 z-20 border border-white/80">
+            <LiquidGlassLayer roundedClass="rounded-[20px] md:rounded-[24px]" />
+            <div className="relative z-10 bg-white/80 p-2 rounded-full border border-white/80 shadow-sm">
                 <svg className="w-4 h-4 text-[#61403A]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-             </div>
-             <span className="text-[#151C2B] font-extrabold text-sm drop-shadow-[0_2px_10px_rgba(255,255,255,0.8)] tracking-wide">Быстро • Надёжно • Официально</span>
-           </div>
+            </div>
+            <span className="relative z-10 text-[#151C2B] font-extrabold text-xs sm:text-sm tracking-wide">Быстро • Надёжно • Официально</span>
+          </div>
         </motion.div>
       </section>
 
@@ -332,9 +331,7 @@ export default function Home() {
           <h2 className="text-[32px] md:text-[40px] font-extrabold text-[#61403A] tracking-tight">Все для постановки <span className="text-[#8BBA82]">на учет</span></h2>
         </motion.div>
         
-        {/* УМЕНЬШЕННАЯ СЕТКА BENTO GRID */}
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={staggerContainer} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
-          
           <div className="lg:col-span-2 h-[260px] md:h-auto">
             <TiltCard className="bg-gradient-to-br from-[#9DC895] to-[#8BBA82] rounded-[24px] md:rounded-[32px] p-6 md:p-8 shadow-lg border border-[#8BBA82]/30 flex flex-col md:flex-row items-center justify-between overflow-hidden relative">
                <div className="absolute top-[-50%] left-[-10%] w-[300px] h-[300px] bg-white/20 rounded-full blur-[60px] pointer-events-none"></div>
@@ -351,7 +348,6 @@ export default function Home() {
                      </li>
                   </ul>
                </div>
-               {/* Иконка в правом нижнем углу карточки */}
               <div className="absolute bottom-6 right-6 hidden md:flex items-center justify-center z-10 pointer-events-none">
                   <div className="w-24 h-24 md:w-28 md:h-28 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/30 shadow-md">
                     <svg className="w-12 h-12 md:w-14 md:h-14 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
@@ -433,11 +429,10 @@ export default function Home() {
                </div>
             </TiltCard>
           </div>
-
         </motion.div>
       </section>
 
-      {/* НОВЫЙ БЛОК: ЗАКОН И БЕЗОПАСНОСТЬ (ПЕРЕД ГАЛЕРЕЕЙ) */}
+      {/* БЛОК: ЗАКОН И БЕЗОПАСНОСТЬ */}
       <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeInUp} className="py-16 md:py-24 max-w-[1140px] mx-auto px-6 md:px-12 relative z-10 border-t border-[#E8EBE8]/50">
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-4 mb-4">
@@ -455,10 +450,7 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Сетка блока законов и штрафов */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          
-          {/* Карточка 1: Почему это важно (Безопасность) */}
           <TiltCard className="bg-white rounded-[32px] p-8 md:p-10 shadow-sm border border-[#E8EBE8] flex flex-col justify-between relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-48 h-48 bg-[#8BBA82]/10 rounded-full blur-3xl pointer-events-none"></div>
             <div>
@@ -476,7 +468,6 @@ export default function Home() {
             </div>
           </TiltCard>
 
-          {/* Карточка 2: Штрафы и ответственность */}
           <TiltCard className="bg-[#61403A] rounded-[32px] p-8 md:p-10 shadow-xl text-white flex flex-col justify-between relative overflow-hidden group">
             <div className="absolute bottom-0 right-0 w-64 h-64 bg-[#8BBA82]/20 rounded-full blur-3xl pointer-events-none"></div>
             <div>
@@ -497,34 +488,18 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Ссылки на статьи с переходом на внешний сайт */}
             <div className="pt-4 border-t border-white/25 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs font-bold">
                <span className="text-white/60">Нормативная база:</span>
                <div className="flex items-center gap-3">
-                 <a 
-                   href="https://www.consultant.ru/document/cons_doc_LAW_34661/fa21e6efbc72793ef1ef868ef4ae90d81ef3b584/" 
-                   target="_blank" 
-                   rel="noopener noreferrer"
-                   className="text-[#8BBA82] hover:text-white underline underline-offset-4 transition-colors"
-                 >
-                   ст. 12.1 КоАП РФ ↗
-                 </a>
-                 <a 
-                   href="https://www.consultant.ru/document/cons_doc_LAW_34661/28236d2e66fc03e945fa671400f9116c4f039369/" 
-                   target="_blank" 
-                   rel="noopener noreferrer"
-                   className="text-[#8BBA82] hover:text-white underline underline-offset-4 transition-colors"
-                 >
-                   ст. 12.5 КоАП РФ ↗
-                 </a>
+                 <a href="https://www.consultant.ru/document/cons_doc_LAW_34661/fa21e6efbc72793ef1ef868ef4ae90d81ef3b584/" target="_blank" rel="noopener noreferrer" className="text-[#8BBA82] hover:text-white underline underline-offset-4 transition-colors">ст. 12.1 КоАП РФ ↗</a>
+                 <a href="https://www.consultant.ru/document/cons_doc_LAW_34661/28236d2e66fc03e945fa671400f9116c4f039369/" target="_blank" rel="noopener noreferrer" className="text-[#8BBA82] hover:text-white underline underline-offset-4 transition-colors">ст. 12.5 КоАП РФ ↗</a>
                </div>
             </div>
           </TiltCard>
-
         </div>
       </motion.section>
 
-      {/* 3D ГАЛЕРЕЯ */}
+      {/* === НОВАЯ ПРОСТАЯ ИНТЕРАКТИВНАЯ ГАЛЕРЕЯ === */}
       <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeInUp} className="py-16 md:py-24 overflow-hidden relative z-10 border-t border-[#E8EBE8]/50">
         <div className="max-w-[1440px] mx-auto px-6 mb-10 md:mb-12 text-center">
           <h2 className="text-[32px] md:text-[49px] font-extrabold text-[#61403A] tracking-tight">
@@ -533,12 +508,12 @@ export default function Home() {
         </div>
 
         <div className="relative w-full max-w-[1440px] mx-auto h-[250px] sm:h-[350px] md:h-[500px] flex items-center justify-center">
-          <button type="button" onClick={handlePrev} className="absolute left-2 md:left-[calc(50%-380px)] top-1/2 -translate-y-1/2 z-[100] text-[#61403A] drop-shadow-md hover:scale-110 transition-transform duration-200 cursor-pointer p-2 md:p-4 focus:outline-none">
-            <svg className="w-10 h-10 md:w-16 md:h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" /></svg>
+          <button type="button" onClick={handlePrev} className="absolute left-2 md:left-[calc(50%-380px)] top-1/2 -translate-y-1/2 z-[100] text-[#61403A] drop-shadow-md hover:scale-110 transition-transform duration-200 cursor-pointer p-2 md:p-4 focus:outline-none bg-white/60 backdrop-blur-sm rounded-full">
+            <svg className="w-8 h-8 md:w-12 md:h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" /></svg>
           </button>
           
-          <button type="button" onClick={handleNext} className="absolute right-2 md:right-[calc(50%-380px)] top-1/2 -translate-y-1/2 z-[100] text-[#61403A] drop-shadow-md hover:scale-110 transition-transform duration-200 cursor-pointer p-2 md:p-4 focus:outline-none">
-            <svg className="w-10 h-10 md:w-16 md:h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" /></svg>
+          <button type="button" onClick={handleNext} className="absolute right-2 md:right-[calc(50%-380px)] top-1/2 -translate-y-1/2 z-[100] text-[#61403A] drop-shadow-md hover:scale-110 transition-transform duration-200 cursor-pointer p-2 md:p-4 focus:outline-none bg-white/60 backdrop-blur-sm rounded-full">
+            <svg className="w-8 h-8 md:w-12 md:h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" /></svg>
           </button>
 
           <div className="relative w-full max-w-5xl h-full flex items-center justify-center pointer-events-none">
@@ -546,22 +521,36 @@ export default function Home() {
               const isCurrent = index === currentPhotoIndex;
               const isPrev = index === (currentPhotoIndex - 1 + galleryPhotos.length) % galleryPhotos.length;
               const isNext = index === (currentPhotoIndex + 1) % galleryPhotos.length;
+              
               let positionClasses = "opacity-0 scale-75 z-0"; 
               if (isCurrent) positionClasses = "translate-x-0 scale-100 z-30 opacity-100 blur-none shadow-2xl pointer-events-auto cursor-default";
               else if (isPrev) positionClasses = "-translate-x-[40%] md:-translate-x-[60%] scale-[0.85] z-20 opacity-60 blur-[4px] cursor-pointer hover:opacity-100 pointer-events-auto";
               else if (isNext) positionClasses = "translate-x-[40%] md:translate-x-[60%] scale-[0.85] z-20 opacity-60 blur-[4px] cursor-pointer hover:opacity-100 pointer-events-auto";
 
               return (
-                <div key={item} onClick={() => { if (isPrev) handlePrev(); if (isNext) handleNext(); }}
-                  className={`absolute w-[75%] sm:w-[65%] md:w-[600px] h-[90%] bg-gray-100 rounded-3xl border border-gray-200 flex items-center justify-center text-gray-400 transition-all duration-700 ease-out overflow-hidden ${positionClasses}`}>
-                  <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-200 rounded-3xl"></div>
-                  <span className="relative z-10 text-xl md:text-2xl font-bold text-[#657080]">Фото {item}</span>
+                <div 
+                  key={index} 
+                  onClick={() => { if (isPrev) handlePrev(); if (isNext) handleNext(); }}
+                  className={`absolute w-[75%] sm:w-[65%] md:w-[600px] h-[90%] rounded-3xl border border-gray-200 flex items-center justify-center transition-all duration-700 ease-out overflow-hidden ${positionClasses}`}
+                >
+                  {/* Реальное изображение вместо заглушки */}
+                  <Image 
+                    src={item.src} 
+                    alt={item.title} 
+                    fill 
+                    className="object-cover"
+                  />
+                  {/* Затемнение и подпись снизу для красоты */}
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4 md:p-6">
+                    <span className="text-white font-bold text-lg md:text-xl drop-shadow-md">{item.title}</span>
+                  </div>
                 </div>
               );
             })}
           </div>
         </div>
       </motion.section>
+      {/* ========================================== */}
 
       {/* ТАРИФЫ И ФОРМА БРОНИРОВАНИЯ */}
       <section className="relative z-10 pb-16 md:pb-24 overflow-hidden">
@@ -666,17 +655,15 @@ export default function Home() {
         </div>
       </section>
 
-      {/* FAQ - С ПРЕМИАЛЬНЫМ SPLIT-ДИЗАЙНОМ В СТИЛЕ APPLE */}
-      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={fadeInUp} id="faq" className="scroll-mt-32 py-16 md:py-24 max-w-[1360px] mx-auto px-6 md:px-19 relative z-10">
+      {/* FAQ */}
+      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={fadeInUp} id="faq" className="scroll-mt-32 py-16 md:py-24 max-w-[1360px] mx-auto px-6 md:px-18 relative z-10">
         <div className="grid lg:grid-cols-[35%_65%] gap-10 md:gap-16 items-start">
-          
-          {/* Левая колонка: Заголовок */}
           <div className="lg:sticky lg:top-32 space-y-4">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EEF3ED] text-[#8BBA82] text-xs font-extrabold uppercase tracking-wider">
               Помощь и ответы
             </div>
             <h2 className={`text-[38px] sm:text-[46px] md:text-[54px] font-bold text-[#61403A] tracking-tight leading-[1.05]`}>
-              Часто задаваемые<br/>
+              Часто задаваемые <br/>
               <span className={playfair.className}>вопросы</span>
             </h2>
             <p className="text-[#657080] font-medium text-[16px] leading-relaxed max-w-sm">
@@ -684,7 +671,6 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Правая колонка: Список вопросов */}
           <div className="space-y-4">
             {faqs.map((faq, index) => {
               const isOpen = openFaq === index;
@@ -716,32 +702,16 @@ export default function Home() {
               );
             })}
           </div>
-
         </div>
       </motion.section>
 
-      {/* КОНТАКТЫ (С НЕОБЫЧНОЙ ВОЛНИСТОЙ ФОРМОЙ) */}
+      {/* КОНТАКТЫ */}
       <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={fadeInUp} id="contacts" className="scroll-mt-32 py-16 md:py-24 max-w-[1440px] mx-auto px-6 md:px-12 relative z-10 overflow-hidden">
-        
-        {/* SVG маска для органической волнистой формы блока контактов */}
-        <svg width="0" height="0" className="absolute">
-          <defs>
-            <clipPath id="organic-contacts" clipPathUnits="objectBoundingBox">
-              <path d="M 0.03,0.05 
-                       C 0.1,0.02, 0.9,0.01, 0.97,0.04 
-                       C 1,0.15, 0.98,0.85, 0.96,0.95 
-                       C 0.9,0.98, 0.1,0.99, 0.04,0.96 
-                       C 0.01,0.85, 0.02,0.15, 0.03,0.05 
-                       Z" />
-            </clipPath>
-          </defs>
-        </svg>
+        <div className="bg-gradient-to-br from-[#9DC895] to-[#8BBA82] rounded-[40px] md:rounded-[48px] p-6 md:p-12 shadow-2xl border border-[#8BBA82]/30 relative overflow-hidden">
+          <div className="absolute top-[-50%] right-[-10%] w-[400px] h-[400px] bg-white/20 rounded-full blur-[80px] pointer-events-none"></div>
 
-        {/* Обертка с органическим скруглением и тенью */}
-        <div className="relative p-2 md:p-6" style={{ clipPath: 'url(#organic-contacts)', WebkitClipPath: 'url(#organic-contacts)' }}>
-          
-          <div className="grid lg:grid-cols-3 gap-8 md:gap-12 bg-white/80 backdrop-blur-2xl p-8 md:p-14 border border-white shadow-2xl">
-            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInLeft} className="lg:col-span-1 flex flex-col justify-between space-y-10 bg-white p-8 md:p-10 rounded-[32px] border border-[#E8EBE8] shadow-sm">
+          <div className="grid lg:grid-cols-3 gap-8 md:gap-12 relative z-10">
+            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInLeft} className="lg:col-span-1 flex flex-col justify-between space-y-10 bg-white/95 backdrop-blur-2xl p-8 md:p-10 rounded-[32px] border border-white/60 shadow-lg">
               <div>
                 <h2 className="text-[32px] font-extrabold text-[#61403A] mb-8 tracking-tight">Ждем вас</h2>
                 <div className="space-y-7 text-[#657080]">
@@ -755,25 +725,24 @@ export default function Home() {
                   </div>
                   <div>
                     <div className="text-xs font-bold uppercase tracking-wider text-[#8BBA82] mb-2">Связь</div>
-                    <a href="tel:+70000000000" className="font-black text-[24px] md:text-[26px] text-[#61403A] block hover:text-[#8BBA82] transition-colors mb-1">+7 (988) 255-65-47</a>
+                    <a href="tel:+79882556547" className="font-black text-[24px] md:text-[26px] text-[#61403A] block hover:text-[#8BBA82] transition-colors mb-1">+7 (988) 255-65-47</a>
                     <a href="mailto:tekhplus@yandex.ru" className="font-bold text-[#657080] hover:text-[#8BBA82] transition-colors text-[16px]">tekhplus@yandex.ru</a>
                   </div>
                 </div>
               </div>
 
               <div className="pt-6 mt-6 border-t border-[#E8EBE8]">
-                <a href="https://yandex.ru/maps/?rtext=~Ростов-на-Дону,+улица+Доватора,+271с1&rtt=auto" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-3 bg-[#EEF3ED] hover:bg-[#8BBA82] text-[#8BBA82] hover:text-white font-extrabold py-4 px-6 rounded-full transition-all w-full text-[16px] group">
+                <a href="https://yandex.ru/maps/?rtext=~Ростов-на-Дону,+улица+Доватора,+271с1&rtt=auto" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-3 bg-[#8BBA82] hover:bg-[#77a66f] text-white font-extrabold py-4 px-6 rounded-full transition-all w-full text-[16px] group shadow-md">
                   <svg className="w-5 h-5 group-hover:animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
                   Построить маршрут
                 </a>
               </div>
             </motion.div>
             
-            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInRight} className="lg:col-span-2 h-[400px] md:h-auto min-h-[450px] bg-[#E8EBE8] rounded-[32px] overflow-hidden relative shadow-sm border border-[#E8EBE8]">
+            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInRight} className="lg:col-span-2 h-[400px] md:h-auto min-h-[450px] bg-white rounded-[32px] overflow-hidden relative shadow-lg border border-white/60">
                <iframe src="https://yandex.ru/map-widget/v1/?um=constructor%3A009b3fe9901a3701834297769ac0653821d629ea2a870450b2fdf9bd86a0c8be&source=constructor" className="absolute inset-0 w-full h-full z-10 border-0" allowFullScreen={true}></iframe>
             </motion.div>
           </div>
-
         </div>
       </motion.section>
       
@@ -791,7 +760,6 @@ export default function Home() {
         </div>
       </motion.footer>
 
-      {/* КАСТОМНЫЕ СТИЛИ */}
       <style dangerouslySetInnerHTML={{__html: `
         html { scroll-behavior: smooth; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
@@ -799,7 +767,6 @@ export default function Home() {
         .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 10px; }
         
-        /* Стилизация библиотеки календаря */
         .react-datepicker {
           font-family: inherit !important;
           background-color: #61403A !important;
