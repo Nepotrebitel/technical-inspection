@@ -114,7 +114,6 @@ export default function Home() {
   const [status, setStatus] = useState('');
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   
-  // === ДОБАВЛЕНО: Состояние и логика для простой галереи ===
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
 
   const galleryPhotos = [
@@ -131,7 +130,6 @@ export default function Home() {
   const handlePrev = () => {
     setCurrentPhotoIndex((prev) => (prev - 1 + galleryPhotos.length) % galleryPhotos.length);
   };
-  // =====================================================================
 
   const pricingPlans = [
     { id: 'L Мотоциклы', cat: 'L', name: 'Мотоциклы', price: 'от 423 ₽' },
@@ -320,7 +318,7 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* БЛОК ПРЕИМУЩЕСТВ - BENTO GRID + 3D TILT */}
+      {/* === ИСПРАВЛЕННЫЙ БЛОК ПРЕИМУЩЕСТВ === */}
       <section id="services" className="scroll-mt-32 py-12 md:py-16 max-w-[1140px] mx-auto px-6 md:px-12 relative z-10">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeInUp} className="text-center mb-8">
           <div className="flex items-center justify-center gap-4 mb-4">
@@ -332,23 +330,25 @@ export default function Home() {
         </motion.div>
         
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={staggerContainer} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
-          <div className="lg:col-span-2 h-[260px] md:h-auto">
-            <TiltCard className="bg-gradient-to-br from-[#9DC895] to-[#8BBA82] rounded-[24px] md:rounded-[32px] p-6 md:p-8 shadow-lg border border-[#8BBA82]/30 flex flex-col md:flex-row items-center justify-between overflow-hidden relative">
+          
+          {/* Карточка 1: Документы (ИСПРАВЛЕНО: h-full вместо фиксированной высоты, чтобы не вылезало) */}
+          <div className="lg:col-span-2 h-full">
+            <TiltCard className="bg-gradient-to-br from-[#9DC895] to-[#8BBA82] rounded-[24px] md:rounded-[32px] p-5 md:p-8 shadow-lg border border-[#8BBA82]/30 flex flex-col md:flex-row items-start md:items-center justify-between overflow-hidden relative h-full">
                <div className="absolute top-[-50%] left-[-10%] w-[300px] h-[300px] bg-white/20 rounded-full blur-[60px] pointer-events-none"></div>
-               <div className="relative z-10 w-full md:w-2/3 text-left">
-                  <h3 className="text-[22px] md:text-[30px] font-extrabold text-white leading-tight mb-5 tracking-tight uppercase drop-shadow-sm">Всё, что нужно от вас:</h3>
-                  <ul className="text-white font-semibold text-[15px] md:text-[19px] leading-relaxed space-y-3">
-                     <li className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-3 rounded-[16px] border border-white/20 shadow-sm">
-                        <span className="w-8 h-8 rounded-full bg-white text-[#8BBA82] flex items-center justify-center shrink-0 shadow-md font-black text-base">1</span>
-                        Документ, удостоверяющий личность
+               <div className="relative z-10 w-full md:w-2/3">
+                  <h3 className="text-xl md:text-[30px] font-extrabold text-white leading-tight mb-4 md:mb-6 tracking-tight uppercase drop-shadow-sm">Всё, что нужно от вас:</h3>
+                  <ul className="flex flex-col gap-3 md:gap-4">
+                     <li className="flex items-start md:items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-3 rounded-[16px] border border-white/20 shadow-sm">
+                        <span className="w-8 h-8 rounded-full bg-white text-[#8BBA82] flex items-center justify-center shrink-0 shadow-md font-black text-base mt-0.5 md:mt-0">1</span>
+                        <span className="text-white font-semibold text-[15px] md:text-[18px] leading-snug">Документ, удостоверяющий личность</span>
                      </li>
-                     <li className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-3 rounded-[16px] border border-white/20 shadow-sm">
-                        <span className="w-8 h-8 rounded-full bg-white text-[#8BBA82] flex items-center justify-center shrink-0 shadow-md font-black text-base">2</span>
-                        Свидетельство о регистрации ТС или ПТС
+                     <li className="flex items-start md:items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-3 rounded-[16px] border border-white/20 shadow-sm">
+                        <span className="w-8 h-8 rounded-full bg-white text-[#8BBA82] flex items-center justify-center shrink-0 shadow-md font-black text-base mt-0.5 md:mt-0">2</span>
+                        <span className="text-white font-semibold text-[15px] md:text-[18px] leading-snug">Свидетельство о регистрации ТС или ПТС</span>
                      </li>
                   </ul>
                </div>
-              <div className="absolute bottom-6 right-6 hidden md:flex items-center justify-center z-10 pointer-events-none">
+              <div className="hidden md:flex absolute bottom-6 right-6 items-center justify-center z-10 pointer-events-none">
                   <div className="w-24 h-24 md:w-28 md:h-28 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/30 shadow-md">
                     <svg className="w-12 h-12 md:w-14 md:h-14 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                   </div>
@@ -356,45 +356,84 @@ export default function Home() {
             </TiltCard>
           </div>
 
-          <div className="lg:col-span-1 h-full">
-            <TiltCard className="bg-white rounded-[24px] md:rounded-[32px] p-6 md:p-8 shadow-[0_8px_30px_rgba(30,40,30,0.04)] border border-[#E8EBE8]/80 flex flex-col justify-center items-start group">
-               <div className="w-[48px] h-[48px] rounded-xl bg-[#EEF3ED] text-[#8BBA82] flex items-center justify-center mb-4 shadow-sm border border-[#8BBA82]/10 group-hover:bg-[#8BBA82] group-hover:text-white transition-colors duration-500">
+          {/* Карточка 2: 30 минут (Моб: иконка слева, текст справа. ПК: как было) */}
+          <div className="h-full">
+            <TiltCard className="bg-white rounded-[24px] md:rounded-[32px] p-4 md:p-8 shadow-[0_8px_30px_rgba(30,40,30,0.04)] border border-[#E8EBE8]/80 flex flex-row md:flex-col items-center md:items-start gap-3 md:gap-4 group h-full">
+               <div className="w-[44px] h-[44px] md:w-[48px] md:h-[48px] rounded-xl bg-[#EEF3ED] text-[#8BBA82] flex items-center justify-center shrink-0 shadow-sm border border-[#8BBA82]/10 group-hover:bg-[#8BBA82] group-hover:text-white transition-colors duration-500">
                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                </div>
-               <h3 className="font-extrabold text-[20px] md:text-[22px] text-[#61403A] mb-2 leading-tight">Сделаем за <br/><span className="text-[#8BBA82]">30 минут</span></h3>
-               <p className="text-[#657080] font-medium text-[14px] leading-relaxed">Ценим ваше время. Строго соблюдаем регламент.</p>
+               <div className="text-center md:text-left">
+                 <h3 className="font-extrabold text-[16px] md:text-[20px] text-[#61403A] leading-tight">Сделаем за <br className="md:hidden"/><span className="text-[#8BBA82]">30 минут</span></h3>
+                 <p className="hidden md:block text-[#657080] font-medium text-[14px] leading-relaxed mt-2">Ценим ваше время. Строго соблюдаем регламент.</p>
+               </div>
             </TiltCard>
           </div>
 
-          <div className="lg:col-span-1 h-full">
-            <TiltCard className="bg-white rounded-[24px] md:rounded-[32px] p-6 md:p-8 shadow-[0_8px_30px_rgba(30,40,30,0.04)] border border-[#E8EBE8]/80 flex flex-col justify-center items-start group relative overflow-hidden">
+          {/* Карточка 3: 200 метров (Моб: иконка слева, текст справа. ПК: как было) */}
+          <div className="h-full">
+            <TiltCard className="bg-white rounded-[24px] md:rounded-[32px] p-4 md:p-8 shadow-[0_8px_30px_rgba(30,40,30,0.04)] border border-[#E8EBE8]/80 flex flex-row md:flex-col items-center md:items-start gap-3 md:gap-4 group relative overflow-hidden h-full">
                <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:scale-110 transition-transform duration-700 pointer-events-none">
                  <svg className="w-32 h-32" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
                </div>
-               <div className="w-[48px] h-[48px] rounded-xl bg-[#EEF3ED] text-[#8BBA82] flex items-center justify-center mb-4 shadow-sm border border-[#8BBA82]/10 group-hover:bg-[#8BBA82] group-hover:text-white transition-colors duration-500 relative z-10">
+               <div className="w-[44px] h-[44px] md:w-[48px] md:h-[48px] rounded-xl bg-[#EEF3ED] text-[#8BBA82] flex items-center justify-center shrink-0 shadow-sm border border-[#8BBA82]/10 group-hover:bg-[#8BBA82] group-hover:text-white transition-colors duration-500 relative z-10">
                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0zM15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                </div>
-               <h3 className="font-extrabold text-[20px] md:text-[22px] text-[#61403A] mb-2 leading-tight relative z-10">200 метров <br/>до МРЭО</h3>
-               <p className="text-[#657080] font-medium text-[14px] leading-relaxed relative z-10">Идеальное расположение. Диагностика прямо у ГИБДД.</p>
+               <div className="text-center md:text-left relative z-10">
+                 <h3 className="font-extrabold text-[16px] md:text-[20px] text-[#61403A] leading-tight">200 метров <br className="md:hidden"/>до МРЭО</h3>
+                 <p className="hidden md:block text-[#657080] font-medium text-[14px] leading-relaxed mt-2">Идеальное расположение. Диагностика прямо у ГИБДД.</p>
+               </div>
             </TiltCard>
           </div>
 
+          {/* Карточка 4: ЕАИСТО */}
           <div className="lg:col-span-2 h-full">
-            <TiltCard className="bg-[#61403A] rounded-[24px] md:rounded-[32px] p-6 md:p-8 shadow-xl border border-white/10 flex flex-col md:flex-row items-center justify-between overflow-hidden group">
+            <TiltCard className="bg-[#61403A] rounded-[24px] md:rounded-[32px] p-5 md:p-8 shadow-xl border border-white/10 flex flex-col md:flex-row items-center md:items-start gap-4 md:gap-5 overflow-hidden group h-full">
               <div className="absolute right-[-10%] top-[-20%] w-64 h-64 bg-[#8BBA82]/20 rounded-full blur-[60px] pointer-events-none group-hover:bg-[#8BBA82]/40 transition-colors duration-700"></div>
-              <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center gap-5 w-full">
-                <div className="w-[64px] h-[64px] rounded-[16px] bg-white/10 border border-white/20 text-[#8BBA82] flex items-center justify-center shrink-0 backdrop-blur-md shadow-inner">
-                   <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>
-                </div>
-                <div>
-                  <h3 className="font-extrabold text-[22px] md:text-[26px] text-white mb-2 leading-tight tracking-wide drop-shadow-sm">Официально в ЕАИСТО</h3>
-                  <p className="text-white/80 font-medium text-[14px] md:text-[15px] leading-relaxed max-w-sm">Моментально вносим данные в единую базу без задержек и очередей.</p>
-                </div>
+              <div className="w-[44px] h-[44px] md:w-[64px] md:h-[64px] rounded-[16px] bg-white/10 border border-white/20 text-[#8BBA82] flex items-center justify-center shrink-0 backdrop-blur-md shadow-inner relative z-10">
+                 <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>
+              </div>
+              <div className="text-center md:text-left relative z-10">
+                <h3 className="font-extrabold text-[18px] md:text-[26px] text-white leading-tight tracking-wide drop-shadow-sm">Официально в ЕАИСТО</h3>
+                <p className="hidden md:block text-white/80 font-medium text-[14px] md:text-[15px] leading-relaxed max-w-sm mt-2">Моментально вносим данные в единую базу без задержек и очередей.</p>
               </div>
             </TiltCard>
           </div>
 
-          <div className="lg:col-span-1 h-full">
+          {/* === ТОЛЬКО ДЛЯ МОБИЛЬНЫХ: Объединенная плашка из 3-х пунктов (иконка + текст справа) === */}
+          <div className="md:hidden col-span-1 h-full">
+            <TiltCard className="bg-white rounded-[24px] p-4 shadow-[0_8px_30px_rgba(30,40,30,0.04)] border border-[#E8EBE8]/80 flex flex-col gap-4">
+               <div className="flex items-center gap-3">
+                 <div className="w-[40px] h-[40px] rounded-xl bg-[#EEF3ED] text-[#8BBA82] flex items-center justify-center shrink-0 shadow-sm">
+                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                 </div>
+                 <div>
+                   <h4 className="font-extrabold text-[15px] text-[#61403A] leading-tight">Категории L, M1, N1</h4>
+                   <p className="text-[#657080] font-medium text-[12px] leading-snug">Любые автомобили и мотоциклы.</p>
+                 </div>
+               </div>
+               <div className="flex items-center gap-3">
+                 <div className="w-[40px] h-[40px] rounded-xl bg-[#EEF3ED] text-[#8BBA82] flex items-center justify-center shrink-0 shadow-sm">
+                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                 </div>
+                 <div>
+                   <h4 className="font-extrabold text-[15px] text-[#61403A] leading-tight">Оформление ОСАГО</h4>
+                   <p className="text-[#657080] font-medium text-[12px] leading-snug">Подберем полис прямо на месте.</p>
+                 </div>
+               </div>
+               <div className="flex items-center gap-3">
+                 <div className="w-[40px] h-[40px] rounded-xl bg-[#EEF3ED] text-[#8BBA82] flex items-center justify-center shrink-0 shadow-sm">
+                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                 </div>
+                 <div>
+                   <h4 className="font-extrabold text-[15px] text-[#61403A] leading-tight">Новые госномера</h4>
+                   <p className="text-[#657080] font-medium text-[12px] leading-snug">Изготовим дубликаты за 5 минут.</p>
+                 </div>
+               </div>
+            </TiltCard>
+          </div>
+
+          {/* === ТОЛЬКО ДЛЯ ПК: Оригинальные 3 карточки (не тронуты) === */}
+          <div className="hidden md:block lg:col-span-1 h-full">
             <TiltCard className="bg-white rounded-[24px] p-5 shadow-[0_8px_30px_rgba(30,40,30,0.04)] border border-[#E8EBE8]/80 flex items-center gap-4 group">
                <div className="w-[44px] h-[44px] rounded-xl bg-[#EEF3ED] text-[#8BBA82] flex items-center justify-center shrink-0 shadow-sm group-hover:bg-[#8BBA82] group-hover:text-white transition-colors duration-300">
                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -406,7 +445,7 @@ export default function Home() {
             </TiltCard>
           </div>
 
-          <div className="lg:col-span-1 h-full">
+          <div className="hidden md:block lg:col-span-1 h-full">
             <TiltCard className="bg-white rounded-[24px] p-5 shadow-[0_8px_30px_rgba(30,40,30,0.04)] border border-[#E8EBE8]/80 flex items-center gap-4 group">
                <div className="w-[44px] h-[44px] rounded-xl bg-[#EEF3ED] text-[#8BBA82] flex items-center justify-center shrink-0 shadow-sm group-hover:bg-[#8BBA82] group-hover:text-white transition-colors duration-300">
                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
@@ -418,7 +457,7 @@ export default function Home() {
             </TiltCard>
           </div>
 
-          <div className="lg:col-span-1 h-full">
+          <div className="hidden md:block lg:col-span-1 h-full">
             <TiltCard className="bg-white rounded-[24px] p-5 shadow-[0_8px_30px_rgba(30,40,30,0.04)] border border-[#E8EBE8]/80 flex items-center gap-4 group">
                <div className="w-[44px] h-[44px] rounded-xl bg-[#EEF3ED] text-[#8BBA82] flex items-center justify-center shrink-0 shadow-sm group-hover:bg-[#8BBA82] group-hover:text-white transition-colors duration-300">
                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
@@ -429,8 +468,10 @@ export default function Home() {
                </div>
             </TiltCard>
           </div>
+
         </motion.div>
       </section>
+      {/* === КОНЕЦ ИСПРАВЛЕННОГО БЛОКА === */}
 
       {/* БЛОК: ЗАКОН И БЕЗОПАСНОСТЬ */}
       <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeInUp} className="py-16 md:py-24 max-w-[1140px] mx-auto px-6 md:px-12 relative z-10 border-t border-[#E8EBE8]/50">
@@ -499,7 +540,7 @@ export default function Home() {
         </div>
       </motion.section>
 
-      {/* === НОВАЯ ПРОСТАЯ ИНТЕРАКТИВНАЯ ГАЛЕРЕЯ === */}
+      {/* ИНТЕРАКТИВНАЯ ГАЛЕРЕЯ */}
       <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeInUp} className="py-16 md:py-24 overflow-hidden relative z-10 border-t border-[#E8EBE8]/50">
         <div className="max-w-[1440px] mx-auto px-6 mb-10 md:mb-12 text-center">
           <h2 className="text-[32px] md:text-[49px] font-extrabold text-[#61403A] tracking-tight">
@@ -508,11 +549,12 @@ export default function Home() {
         </div>
 
         <div className="relative w-full max-w-[1440px] mx-auto h-[250px] sm:h-[350px] md:h-[500px] flex items-center justify-center">
-          <button type="button" onClick={handlePrev} className="absolute left-2 md:left-[calc(50%-380px)] top-1/2 -translate-y-1/2 z-[100] text-[#61403A] drop-shadow-md hover:scale-110 transition-transform duration-200 cursor-pointer p-2 md:p-4 focus:outline-none bg-white/60 backdrop-blur-sm rounded-full">
+          {/* ИЗМЕНЕНО: убраны bg-white/60, backdrop-blur-sm и rounded-full, остались только стрелки */}
+          <button type="button" onClick={handlePrev} className="absolute left-2 md:left-[calc(50%-380px)] top-1/2 -translate-y-1/2 z-[100] text-[#61403A] drop-shadow-md hover:scale-110 transition-transform duration-200 cursor-pointer p-2 md:p-4 focus:outline-none">
             <svg className="w-8 h-8 md:w-12 md:h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" /></svg>
           </button>
           
-          <button type="button" onClick={handleNext} className="absolute right-2 md:right-[calc(50%-380px)] top-1/2 -translate-y-1/2 z-[100] text-[#61403A] drop-shadow-md hover:scale-110 transition-transform duration-200 cursor-pointer p-2 md:p-4 focus:outline-none bg-white/60 backdrop-blur-sm rounded-full">
+          <button type="button" onClick={handleNext} className="absolute right-2 md:right-[calc(50%-380px)] top-1/2 -translate-y-1/2 z-[100] text-[#61403A] drop-shadow-md hover:scale-110 transition-transform duration-200 cursor-pointer p-2 md:p-4 focus:outline-none">
             <svg className="w-8 h-8 md:w-12 md:h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" /></svg>
           </button>
 
@@ -533,14 +575,12 @@ export default function Home() {
                   onClick={() => { if (isPrev) handlePrev(); if (isNext) handleNext(); }}
                   className={`absolute w-[75%] sm:w-[65%] md:w-[600px] h-[90%] rounded-3xl border border-gray-200 flex items-center justify-center transition-all duration-700 ease-out overflow-hidden ${positionClasses}`}
                 >
-                  {/* Реальное изображение вместо заглушки */}
                   <Image 
                     src={item.src} 
                     alt={item.title} 
                     fill 
                     className="object-cover"
                   />
-                  {/* Затемнение и подпись снизу для красоты */}
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4 md:p-6">
                     <span className="text-white font-bold text-lg md:text-xl drop-shadow-md">{item.title}</span>
                   </div>
@@ -550,7 +590,6 @@ export default function Home() {
           </div>
         </div>
       </motion.section>
-      {/* ========================================== */}
 
       {/* ТАРИФЫ И ФОРМА БРОНИРОВАНИЯ */}
       <section className="relative z-10 pb-16 md:pb-24 overflow-hidden">
@@ -784,9 +823,27 @@ export default function Home() {
         .react-datepicker__current-month, .react-datepicker__day-name { color: white !important; }
         .react-datepicker__day { color: rgba(255,255,255,0.8) !important; border-radius: 8px !important; }
         .react-datepicker-popper { z-index: 9999 !important; }
-        .react-datepicker__day:hover { background-color: rgba(139,186,130,0.4) !important; }
-        .react-datepicker__day--selected { background-color: #8BBA82 !important; color: white !important; font-weight: bold; }
-        .react-datepicker__day--keyboard-selected { background-color: transparent !important; }
+        
+        .react-datepicker__day--disabled, 
+        .react-datepicker__day--outside-month {
+          color: rgba(255,255,255,0.3) !important;
+          cursor: not-allowed !important;
+          opacity: 0.5 !important;
+        }
+        .react-datepicker__day:hover:not(.react-datepicker__day--selected):not(.react-datepicker__day--disabled) {
+          background-color: #8BBA82 !important;
+          color: white !important;
+          border-radius: 50% !important;
+        }
+        .react-datepicker__day--selected {
+          background-color: #8BBA82 !important;
+          color: white !important;
+          border-radius: 50% !important;
+          font-weight: bold;
+        }
+        .react-datepicker__day--keyboard-selected { 
+          background-color: transparent !important; 
+        }
       `}} />
     </main>
   );
