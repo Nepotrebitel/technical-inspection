@@ -6,21 +6,13 @@ import { Manrope, Playfair_Display } from 'next/font/google';
 import DatePicker, { registerLocale } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { ru } from "date-fns/locale";
-import { motion, useMotionValue, useSpring, useTransform, Variants } from "framer-motion";
+import { motion, Variants } from "framer-motion";
 
 import { LiquidGlassFilter, LiquidGlassLayer, LiquidButton } from "@/components/ui/liquid-glass";
 
 registerLocale("ru", ru);
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000").replace(/\/+$/, "");
-
-const ALLOWED_CATEGORIES = [
-  "L Мотоциклы",
-  "M1 Легковые автомобили",
-  "N1 Грузовики (до 3,5т)",
-] as const;
-
-type VehicleCategory = (typeof ALLOWED_CATEGORIES)[number];
 
 const manrope = Manrope({ subsets: ['cyrillic', 'latin'], weight: ['400', '500', '600', '700', '800'] });
 const playfair = Playfair_Display({ subsets: ['cyrillic', 'latin'], style: ['italic'], weight: ['600'] });
@@ -48,55 +40,29 @@ function isSameDay(a: Date | null, b: Date): boolean {
 }
 
 const TiltCard = ({ children, className }: { children: React.ReactNode; className?: string }) => {
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  const [isHovered, setIsHovered] = useState(false);
-
-  const mouseXSpring = useSpring(x, { stiffness: 150, damping: 20 });
-  const mouseYSpring = useSpring(y, { stiffness: 150, damping: 20 });
-  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["4deg", "-4deg"]);
-  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-4deg", "4deg"]);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    if (!rect.width || !rect.height) return;
-    x.set((e.clientX - rect.left) / rect.width - 0.5);
-    y.set((e.clientY - rect.top) / rect.height - 0.5);
-  };
-
-  const handleMouseEnter = () => setIsHovered(true);
-
-  const handleMouseLeave = () => {
-    setIsHovered(false);
-    x.set(0);
-    y.set(0);
-  };
-
   return (
-      <motion.div
-        variants={fadeInUp}
-        whileHover={{ y: -4 }}
-        transition={{ duration: 0.25, ease: "easeOut" }}
-        className={`w-full h-full relative cursor-default ${className}`}
-      >
-        <div className="w-full h-full">
-          {children}
-        </div>
-      </motion.div>
-    );
-  };
+    <motion.div
+      variants={fadeInUp}
+      whileHover={{ y: -4 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
+      className={`w-full h-full relative cursor-default ${className}`}
+    >
+      <div className="w-full h-full">
+        {children}
+      </div>
+    </motion.div>
+  );
+};
 
 export default function Home() {
   const [formData, setFormData] = useState<{
     carNumber: string;
     phone: string;
-    category: VehicleCategory;
     date: Date | null;
     time: string;
   }>({
     carNumber: '',
     phone: '',
-    category: 'M1 Легковые автомобили',
     date: null,
     time: '',
   });
@@ -105,10 +71,10 @@ export default function Home() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
-
+  const [cameraModalTab, setCameraModalTab] = useState<'fines' | 'regress'>('fines');
   const [openService, setOpenService] = useState<number | null>(null);
-
   const [isTuningOpen, setIsTuningOpen] = useState(false);
+  const [isRegressOpen, setIsRegressOpen] = useState(false);
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMandatoryOpen, setIsMandatoryOpen] = useState(false);
@@ -119,7 +85,7 @@ export default function Home() {
   const [lawTab, setLawTab] = useState<'to' | 'plates' | 'tuning'>('to');
 
   const tuningExamples = [
-    "ГБО (газобаллонное оборудование)",
+    "Газобаллонное оборудование (ГБО)",
     "Тягово-сцепное устройство (фаркоп)",
     "Монтаж лебёдки",
     "Воздухозаборник (шноркель)",
@@ -138,11 +104,7 @@ export default function Home() {
     "Перепланировка салона",
   ];
 
-const [today, setToday] = useState<Date | null>(null);
-
-  useEffect(() => {
-    setToday(new Date());
-  }, []);
+  const [today, setToday] = useState<Date | null>(null);
 
   const quickDates = useMemo(() => {
     if (!today) {
@@ -160,13 +122,13 @@ const [today, setToday] = useState<Date | null>(null);
     });
   }, [today]);
 
- const galleryPhotos = [
-  { src: "/photo/ph-1.jpeg", title: "Линия осмотра" },
-  { src: "/photo/ph-2.jpeg", title: "Диагностика ходовой" },
-  { src: "/photo/ph-3.jpeg", title: "Проверка оптики" },
-  { src: "/photo/ph-4.jpeg", title: "Пункт ТЕХПЛЮС" },
-  { src: "/photo/ph-5.jpeg", title: "Зона ожидания" }, 
-];
+  const galleryPhotos = [
+    { src: "/photo/ph-1.jpeg", title: "Линия осмотра" },
+    { src: "/photo/ph-2.jpeg", title: "Диагностика ходовой" },
+    { src: "/photo/ph-3.jpeg", title: "Проверка оптики" },
+    { src: "/photo/ph-4.jpeg", title: "Пункт ТЕХПЛЮС" },
+    { src: "/photo/ph-5.jpeg", title: "Зона ожидания" },
+  ];
 
   const handleNext = () => {
     setCurrentPhotoIndex((prev) => (prev + 1) % galleryPhotos.length);
@@ -190,7 +152,7 @@ const [today, setToday] = useState<Date | null>(null);
     setTouchStartX(null);
   };
 
- // 1. Сброс скролла при загрузке
+  // 1. Сброс скролла при загрузке
   useEffect(() => {
     window.scrollTo(0, 0);
     if (window.location.hash) window.history.replaceState(null, '', window.location.pathname);
@@ -260,14 +222,8 @@ const [today, setToday] = useState<Date | null>(null);
     return () => controller.abort();
   }, [formData.date]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    if (name === "category") {
-      if (ALLOWED_CATEGORIES.includes(value as VehicleCategory)) {
-        setFormData((prev) => ({ ...prev, category: value as VehicleCategory }));
-      }
-      return;
-    }
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -319,44 +275,35 @@ const [today, setToday] = useState<Date | null>(null);
       return;
     }
 
-    if (!ALLOWED_CATEGORIES.includes(formData.category)) {
-      setStatus({ type: 'error', text: 'Некорректная категория транспортного средства.' });
+    // Номер машины — обязательный (поддерживаем авто, мото и прицепы)
+    const cleanedNumber = formData.carNumber.replace(/[^А-ЯA-Z0-9]/gi, '').toUpperCase();
+    const validLetters = 'АВЕКМНОРСТУХABEKMHOPCTYX';
+    const isCarValid = new RegExp(`^[${validLetters}]\\d{3}[${validLetters}]{2}\\d{2,3}$`).test(cleanedNumber);
+    const isMotoValid = new RegExp(`^\\d{4}[${validLetters}]{2}\\d{2,3}$`).test(cleanedNumber);
+    const isTrailerValid = new RegExp(`^[${validLetters}]{2}\\d{4}\\d{2,3}$`).test(cleanedNumber);
+
+    if (!cleanedNumber || (!isCarValid && !isMotoValid && !isTrailerValid)) {
+      setStatus({
+        type: 'error',
+        text: 'Укажите корректный госномер ТС. Пример: А 123 АА 161 (или 1234 АА 161 для мото).',
+      });
       return;
     }
 
-    const cleanedNumber = formData.carNumber.replace(/[^А-ЯA-Z0-9]/gi, '').toUpperCase();
-
-    if (cleanedNumber.length > 0) {
-      const validLetters = 'АВЕКМНОРСТУХABEKMHOPCTYX';
-      let isNumberValid = false;
-
-      if (formData.category === 'L Мотоциклы') {
-        isNumberValid = new RegExp(`^\\d{4}[${validLetters}]{2}\\d{2,3}$`).test(cleanedNumber);
-      } else {
-        isNumberValid = new RegExp(`^[${validLetters}]\\d{3}[${validLetters}]{2}\\d{2,3}$`).test(cleanedNumber);
-      }
-
-      if (!isNumberValid) {
-        setStatus({
-          type: 'error',
-          text: formData.category === 'L Мотоциклы'
-            ? 'Неверный госномер мотоцикла. Пример: 1234 АА 161'
-            : 'Неверный госномер. Пример: А 123 АА 161',
-        });
+    // Телефон — необязательный, проверяем только если пользователь начал его вводить
+    const digitsOnly = formData.phone.replace(/\D/g, '');
+    let normalizedPhone: string | null = null;
+    if (digitsOnly.length > 0) {
+      if (digitsOnly.length < 10 || digitsOnly.length > 12) {
+        setStatus({ type: 'error', text: 'Введите корректный номер телефона (минимум 10 цифр) или оставьте поле пустым.' });
         return;
       }
+      normalizedPhone = digitsOnly.length === 10
+        ? `+7${digitsOnly}`
+        : digitsOnly.startsWith('8') && digitsOnly.length === 11
+        ? `+7${digitsOnly.slice(1)}`
+        : `+${digitsOnly}`;
     }
-
-    const digitsOnly = formData.phone.replace(/\D/g, '');
-    if (digitsOnly.length < 10 || digitsOnly.length > 12) {
-      setStatus({ type: 'error', text: 'Введите корректный номер телефона (минимум 10 цифр).' });
-      return;
-    }
-    const normalizedPhone = digitsOnly.length === 10
-      ? `+7${digitsOnly}`
-      : digitsOnly.startsWith('8') && digitsOnly.length === 11
-      ? `+7${digitsOnly.slice(1)}`
-      : `+${digitsOnly}`;
 
     const formattedDate = formatLocalDate(formData.date);
 
@@ -373,7 +320,7 @@ const [today, setToday] = useState<Date | null>(null);
         body: JSON.stringify({
           carNumber: cleanedNumber,
           phone: normalizedPhone,
-          category: formData.category,
+          category: 'M1 Легковые автомобили',
           date: formattedDate,
           time: formData.time,
         }),
@@ -382,7 +329,7 @@ const [today, setToday] = useState<Date | null>(null);
       if (response.ok) {
         setStatus({ type: 'success', text: 'Заявка успешно отправлена! Талон активирован — ждём вас.' });
         setBookedSlots((prev) => [...prev, formData.time]);
-        setFormData((prev) => ({ carNumber: '', phone: '', category: prev.category, date: prev.date, time: '' }));
+        setFormData((prev) => ({ carNumber: '', phone: '', date: prev.date, time: '' }));
       } else if (response.status === 409) {
         setStatus({ type: 'error', text: 'Выбранное время уже занято. Пожалуйста, выберите другой слот.' });
         setBookedSlots((prev) => [...prev, formData.time]);
@@ -398,24 +345,22 @@ const [today, setToday] = useState<Date | null>(null);
   };
 
   // Разбор введённого номера для красивого отображения на электронном талоне
- const ticketPlate = useMemo(() => {
+  const ticketPlate = useMemo(() => {
     const raw = formData.carNumber.replace(/[^А-ЯA-Z0-9]/gi, '').toUpperCase();
     if (!raw) {
-      return formData.category === 'L Мотоциклы'
-        ? { main: "1234 АА", region: "161", isPlaceholder: true }
-        : { main: "А 123 АА", region: "161", isPlaceholder: true };
+      return { main: "А 123 АА", region: "161", isPlaceholder: true };
     }
-  const match = raw.match(/^([А-ЯA-Z0-9]{6})(\d{2,3})$/);
+    const match = raw.match(/^([А-ЯA-Z0-9]{6})(\d{2,3})$/);
     if (match) {
       const base = match[1];
-      const formattedBase =
-        formData.category === 'L Мотоциклы'
-          ? `${base.slice(0, 4)} ${base.slice(4, 6)}`
-          : `${base[0]} ${base.slice(1, 4)} ${base.slice(4, 6)}`;
+      const isMoto = /^\d{4}[А-ЯA-Z]{2}$/.test(base);
+      const formattedBase = isMoto
+        ? `${base.slice(0, 4)} ${base.slice(4, 6)}`
+        : `${base[0]} ${base.slice(1, 4)} ${base.slice(4, 6)}`;
       return { main: formattedBase, region: match[2], isPlaceholder: false };
     }
     return { main: raw.slice(0, 6), region: raw.slice(6, 9) || "161", isPlaceholder: false };
-  }, [formData.carNumber, formData.category]);
+  }, [formData.carNumber]);
 
   const mandatoryList = [
     "Если автомобиль используется в служебных целях или оформлен на юридическое лицо",
@@ -429,11 +374,11 @@ const [today, setToday] = useState<Date | null>(null);
   ];
 
   const faqs = [
-    { q: "Нужны ли аптечка, огнетушитель и знак?", a: "Технический эксперт проверяет машину по списку из 55 параметров. Наличие аптечки, огнетушителя и знака в этом списке нет." },
-    { q: "Обязательна ли запись?", a: "Нет, запись не является обязательной. Можем Вас принять в порядке живой очереди." },
+    { q: "Нужны ли аптечка, огнетушитель и знак?", a: "Технический эксперт проверяет машину по списку параметров. Наличие аптечки, огнетушителя и знака экспертом не проверяется." },
+    { q: "Обязательна ли запись?", a: "Нет, запись не является обязательной. Можем принять в любое удобное для вас время в порядке живой очереди." },
     { q: "Можно ли оплатить услуги банковской картой?", a: "Да, мы принимаем оплату наличными, картами любых банков и по QR-коду (СБП). Для юрлиц доступна оплата по счету." },
-    { q: "Нужно ли мыть машину перед заездом на линию?", a: "Да, автомобиль должен быть чистым. Особое внимание уделите читаемости номеров и чистоте фар." },
-    { q: "Пройду ли я техосмотр с трещиной на лобовом стекле?", a: "Трещины в зоне очистки стеклоочистителя со стороны водителя не допускаются. Если трещина со стороны пассажира — техосмотр пройти можно." },
+    { q: "Обязательно ли собственник проходит техосмотр?", a: "Нет, пройти техосмотр может любой человек (представитель собственника). При себе необходимо иметь свидетельство о регистрации ТС или ПТС/ЭПТС, а также документ, удостоверяющий личность." },
+    /*{ q: "Пройду ли я техосмотр с трещиной на лобовом стекле?", a: "Трещины в зоне очистки стеклоочистителя со стороны водителя не допускаются. Если трещина со стороны пассажира — техосмотр пройти можно." },*/
   ];
 
   return (
@@ -460,7 +405,7 @@ const [today, setToday] = useState<Date | null>(null);
         <div className="absolute top-[35%] left-[-15%] w-[500px] h-[500px] rounded-full bg-[#8BBA82] opacity-35 blur-[90px]"></div>
       </div>
 
-      {/* ШАПКА (Пункт «Кому нужен ТО» -> #law) */}
+      {/* ШАПКА */}
       <motion.header
         initial={{ y: -100 }}
         animate={{ y: 0 }}
@@ -472,7 +417,6 @@ const [today, setToday] = useState<Date | null>(null);
             ТЕХПЛЮС<span className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-full bg-[#8BBA82] inline-block mb-0.5"></span>
           </div>
 
-          {/* Навигация для ПК */}
           <nav className="hidden md:flex items-center gap-5 lg:gap-8 text-[15px] font-bold text-[#657080]">
             <a href="#docs" className="hover:text-[#151C2B] transition-colors whitespace-nowrap">Документы</a>
             <a href="#services" className="hover:text-[#151C2B] transition-colors whitespace-nowrap">Услуги</a>
@@ -494,7 +438,6 @@ const [today, setToday] = useState<Date | null>(null);
               <span className="inline sm:hidden">Позвонить</span>
             </a>
 
-            {/* Кнопка открытия меню на мобильных */}
             <button
               type="button"
               onClick={() => setMobileMenuOpen((prev) => !prev)}
@@ -515,7 +458,6 @@ const [today, setToday] = useState<Date | null>(null);
           </div>
         </div>
 
-        {/* Выпадающее меню разделов для мобильных */}
         {mobileMenuOpen && (
           <nav className="md:hidden px-4 pb-4 pt-2 border-t border-[#E8EBE8]/80 flex flex-col gap-1.5 text-[15px] font-bold text-[#657080]">
             <a href="#docs" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2.5 rounded-xl hover:bg-[#F8F9F7] text-[#151C2B]">Документы</a>
@@ -534,7 +476,7 @@ const [today, setToday] = useState<Date | null>(null);
         )}
       </motion.header>
 
-      {/* ПЕРВЫЙ ЭКРАН */}
+      {/* ПЕРВЫЙ ЭКРАН (Поменяли местами график и кнопку + аккуратная подпись про приём в любое время) */}
       <section className="relative pt-[110px] pb-12 sm:pt-[140px] sm:pb-16 md:pt-[190px] md:pb-24 px-4 sm:px-6 md:px-12 max-w-[1440px] mx-auto grid lg:grid-cols-[45%_55%] gap-8 md:gap-14 items-center z-10 overflow-hidden">
         <motion.div initial="hidden" animate="visible" variants={fadeInLeft} className="space-y-4 sm:space-y-5 md:space-y-6 pr-0 md:pr-4">
           <div className="inline-flex items-center gap-2 sm:gap-2.5 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full bg-white border border-[#E8EBE8] text-[#151C2B] text-xs md:text-sm font-bold shadow-sm relative overflow-hidden">
@@ -555,29 +497,38 @@ const [today, setToday] = useState<Date | null>(null);
             Аккредитованный пункт. Моментальная передача данных в ЕАИСТО для успешной регистрации в ГИБДД. Выполним работу за 30 минут. 175 метров до МРЭО.
           </p>
 
-          <div className="flex flex-col xl:flex-row items-stretch sm:items-start xl:items-center gap-4 sm:gap-6 pt-2 md:pt-4">
-            <LiquidButton
-              href="#booking"
-              className="bg-[#8BBA82]/85 hover:bg-[#8BBA82] text-white shadow-[0_10px_30px_rgba(139,186,130,0.4)] hover:-translate-y-1 w-full sm:w-auto group z-20"
-            >
-              Выбрать время
-              <span className="bg-white text-[#8BBA82] w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center group-hover:translate-x-1 transition-transform shadow-sm">
-                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
-              </span>
-            </LiquidButton>
+          <div className="space-y-3.5 pt-2 md:pt-4">
+            <div className="flex flex-col xl:flex-row items-stretch sm:items-start xl:items-center gap-3.5 sm:gap-5">
+              {/* Сначала — карточка графика работы */}
+              <div className="flex items-center gap-3.5 sm:gap-5 bg-white/35 px-4 py-3.5 sm:px-6 sm:py-4 md:px-7 md:py-5 rounded-[22px] sm:rounded-[24px] border border-white/80 relative overflow-hidden group w-full xl:w-auto">
+                <LiquidGlassLayer roundedClass="rounded-[22px] sm:rounded-[24px]" />
+                <div className="absolute left-0 top-0 bottom-0 w-2 bg-[#8BBA82] z-10"></div>
+                <div className="w-11 h-11 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full bg-white/80 flex items-center justify-center text-[#8BBA82] shrink-0 group-hover:scale-110 transition-transform shadow-sm border border-white/70 relative z-10">
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </div>
+                <div className="font-semibold text-[#151C2B] leading-snug relative z-10 min-w-0">
+                  <div className="text-[#61403A] font-black mb-0.5 sm:mb-1 text-[11.5px] sm:text-[13px] md:text-[14px] uppercase tracking-wider">Режим работы</div>
+                  <div className="text-[14px] sm:text-[15px] md:text-[17px] mb-0.5">Пн–Сб: <span className="text-[#151C2B]/75 font-medium">8:00 – 18:00</span></div>
+                  <div className="text-[14px] sm:text-[15px] md:text-[17px]">Вс: <span className="text-[#151C2B]/75 font-medium">9:00 – 17:00</span></div>
+                </div>
+              </div>
 
-            <div className="flex items-center gap-4 sm:gap-5 bg-white/35 px-5 py-3.5 sm:px-6 sm:py-4 md:px-7 md:py-5 rounded-[22px] sm:rounded-[24px] border border-white/80 relative overflow-hidden group w-full xl:w-auto">
-              <LiquidGlassLayer roundedClass="rounded-[22px] sm:rounded-[24px]" />
-              <div className="absolute left-0 top-0 bottom-0 w-2 bg-[#8BBA82] z-10"></div>
-              <div className="w-11 h-11 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full bg-white/80 flex items-center justify-center text-[#8BBA82] shrink-0 group-hover:scale-110 transition-transform shadow-sm border border-white/70 relative z-10">
-                <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-              </div>
-              <div className="font-semibold text-[#151C2B] leading-snug relative z-10">
-                <div className="text-[#61403A] font-black mb-1 text-[12px] sm:text-[13px] md:text-[14px] uppercase tracking-wider">Режим работы</div>
-                <div className="text-[14px] sm:text-[15px] md:text-[17px] mb-0.5">Пн–Сб: <span className="text-[#151C2B]/75 font-medium">8:00 – 18:00</span></div>
-                <div className="text-[14px] sm:text-[15px] md:text-[17px]">Вс: <span className="text-[#151C2B]/75 font-medium">9:00 – 17:00</span></div>
-              </div>
+              {/* Затем — кнопка записи */}
+              <LiquidButton
+                href="#booking"
+                className="bg-[#8BBA82]/85 hover:bg-[#8BBA82] text-white shadow-[0_10px_30px_rgba(139,186,130,0.4)] hover:-translate-y-1 w-full sm:w-auto group z-20 justify-center"
+              >
+                Выбрать время
+                <span className="bg-white text-[#8BBA82] w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center group-hover:translate-x-1 transition-transform shadow-sm shrink-0">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
+                </span>
+              </LiquidButton>
             </div>
+
+            <p className="text-[15px] sm:text-[16px] md:text-[17px] text-[#61403A] font-bold pl-1 flex items-start sm:items-center gap-2.5 leading-snug">
+              <span className="w-2 h-2 rounded-full bg-[#8BBA82] shrink-0 mt-1.5 sm:mt-0"></span>
+              <span>Ждём в любое удобное для вас время — или можете записаться заранее.</span>
+            </p>
           </div>
         </motion.div>
 
@@ -618,7 +569,7 @@ const [today, setToday] = useState<Date | null>(null);
 
       {/* === БЛОК 1: ВСЕ ДЛЯ ПОСТАНОВКИ НА УЧЕТ === */}
       <section id="docs" className="scroll-mt-28 md:scroll-mt-32 py-12 md:py-20 max-w-[1440px] mx-auto px-4 sm:px-6 md:px-12 relative z-10">
-      <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeInUp} className="text-center mb-8 md:mb-12">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeInUp} className="text-center mb-8 md:mb-12">
           <div className="flex items-center justify-center gap-3 sm:gap-4 mb-3 sm:mb-4">
             <div className="h-px bg-[#E8EBE8] w-10 sm:w-12 md:w-24"></div>
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-[#E8EBE8] flex items-center justify-center text-[#8BBA82] bg-white shadow-sm">
@@ -632,7 +583,6 @@ const [today, setToday] = useState<Date | null>(null);
         </motion.div>
 
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={staggerContainer} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
-
           {/* Карточка 1: Документы */}
           <div className="md:col-span-2 lg:col-span-2 h-full">
             <TiltCard className="bg-gradient-to-br from-[#9DC895] to-[#8BBA82] rounded-[24px] md:rounded-[32px] p-5 sm:p-6 md:p-9 shadow-lg border border-[#8BBA82]/30 flex flex-col md:flex-row items-start md:items-center justify-between overflow-hidden relative h-full">
@@ -643,13 +593,13 @@ const [today, setToday] = useState<Date | null>(null);
                   <li className="flex items-center gap-3.5 bg-white/15 backdrop-blur-md px-4 py-3 sm:px-5 sm:py-3.5 rounded-[14px] sm:rounded-[18px] border border-white/25 shadow-sm">
                     <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white text-[#8BBA82] flex items-center justify-center shrink-0 shadow-md font-black text-sm sm:text-base">1</span>
                     <span className="text-white font-semibold text-[14px] sm:text-[15px] md:text-[18px] leading-snug">
-                      Документ, удостоверяющий личность (паспорт или водительские права)
+                      Документ, удостоверяющий личность (паспорт или водительское удостоверение)
                     </span>
                   </li>
                   <li className="flex items-center gap-3.5 bg-white/15 backdrop-blur-md px-4 py-3 sm:px-5 sm:py-3.5 rounded-[14px] sm:rounded-[18px] border border-white/25 shadow-sm">
                     <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white text-[#8BBA82] flex items-center justify-center shrink-0 shadow-md font-black text-sm sm:text-base">2</span>
                     <span className="text-white font-semibold text-[14px] sm:text-[15px] md:text-[18px] leading-snug">
-                      Свидетельство о регистрации ТС или ПТС (в том числе электронный вариант ЭПТС)
+                      Свидетельство о регистрации ТС или ПТС/ЭПТС
                     </span>
                   </li>
                 </ul>
@@ -671,7 +621,7 @@ const [today, setToday] = useState<Date | null>(null);
                 </div>
                 <div className="text-left flex-1 md:flex-none min-w-0">
                   <h3 className="font-extrabold text-[16px] sm:text-[17px] md:text-[24px] text-[#61403A] leading-tight">Сделаем за <span className="text-[#8BBA82]">30 минут</span></h3>
-                  <p className="hidden md:block text-[#657080] font-medium text-[15px] leading-relaxed mt-2.5">Ценим ваше время — быстрый и точный осмотр без очередей.</p>
+                  <p className="hidden md:block text-[#657080] font-medium text-[15px] leading-relaxed mt-2.5">Ценим ваше время — быстрый и точный осмотр.</p>
                 </div>
               </div>
             </TiltCard>
@@ -705,16 +655,15 @@ const [today, setToday] = useState<Date | null>(null);
                 </div>
                 <div className="text-left flex-1 min-w-0">
                   <h3 className="font-extrabold text-[16px] sm:text-[18px] md:text-[28px] text-white leading-tight tracking-wide drop-shadow-sm">Официально в ЕАИСТО</h3>
-                  <p className="hidden md:block text-white/80 font-medium text-[15px] md:text-[16px] leading-relaxed max-w-md mt-2">Моментально вносим данные в единую базу без задержек и очередей.</p>
+                  <p className="hidden md:block text-white/80 font-medium text-[15px] md:text-[16px] leading-relaxed max-w-md mt-2">Моментально вносим данные в единую базу ГИБДД.</p>
                 </div>
               </div>
             </TiltCard>
           </div>
-
         </motion.div>
       </section>
 
-     {/* === БЛОК 2: ЗОНА «УСЛУГИ» (Полная мобильная адаптация без наездов кнопок) === */}
+      {/* === БЛОК 2: ЗОНА «УСЛУГИ» === */}
       <section id="services" className="scroll-mt-28 md:scroll-mt-32 py-10 md:py-16 max-w-[1440px] mx-auto px-4 sm:px-6 md:px-12 relative z-10">
         <motion.div
           initial="hidden"
@@ -746,11 +695,13 @@ const [today, setToday] = useState<Date | null>(null);
             whileInView="visible"
             viewport={{ once: true, margin: "-80px" }}
             variants={staggerContainer}
-            className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-5 md:gap-6 items-start"
+            className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-5 md:gap-6 items-start md:items-stretch"
           >
-            {/* Услуга 01: Техосмотр */}
-            <TiltCard className="bg-[#F8F9F7] hover:bg-white rounded-[20px] sm:rounded-[22px] md:rounded-[28px] p-4 sm:p-6 md:p-8 border border-[#E8EBE8] hover:border-[#8BBA82]/50 shadow-sm hover:shadow-xl transition-all duration-300 group h-full">
-              <div className="flex flex-col justify-between h-full">
+            {/* Услуга 01: Техосмотр — ЗЕЛЁНАЯ КАРТОЧКА (как в блоке выше) */}
+            <TiltCard className="bg-gradient-to-br from-[#9DC895] to-[#8BBA82] rounded-[20px] sm:rounded-[22px] md:rounded-[28px] p-4 sm:p-6 md:p-8 border border-[#8BBA82]/30 shadow-lg hover:shadow-xl transition-all duration-300 group h-full relative overflow-hidden">
+              <div className="absolute -right-12 -top-12 w-48 h-48 rounded-full bg-white/15 blur-2xl pointer-events-none"></div>
+
+              <div className="relative z-10 flex flex-col justify-between h-full">
                 <div className="flex flex-col gap-3 md:gap-5 w-full">
                   <button
                     type="button"
@@ -759,39 +710,39 @@ const [today, setToday] = useState<Date | null>(null);
                     className="w-full flex items-center justify-between gap-2.5 sm:gap-3 text-left md:cursor-default focus:outline-none"
                   >
                     <div className="flex items-center gap-3 sm:gap-3.5 flex-1 min-w-0">
-                      <div className="w-11 h-11 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-2xl bg-[#EEF3ED] text-[#8BBA82] flex items-center justify-center shrink-0 group-hover:bg-[#8BBA82] group-hover:text-white transition-colors duration-300 shadow-sm">
+                      <div className="w-11 h-11 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-2xl bg-white/20 border border-white/30 text-white flex items-center justify-center shrink-0 backdrop-blur-md shadow-sm">
                         <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                       </div>
                       <div className="md:hidden flex-1 min-w-0 pr-1">
-                        <h3 className="font-extrabold text-[15px] sm:text-[16px] text-[#61403A] leading-tight">Категории L, M1, N1</h3>
-                        <span className="block text-[11px] font-bold text-[#8BBA82] mt-0.5 truncate">Диагностическая карта ЕАИСТО</span>
+                        <h3 className="font-extrabold text-[15px] sm:text-[16px] text-white leading-tight drop-shadow-sm">Категории L, M1, N1</h3>
+                        <span className="block text-[11px] font-bold text-white/90 mt-0.5 truncate">Диагностическая карта ЕАИСТО</span>
                       </div>
                     </div>
 
-                    <div className={`md:hidden w-8 h-8 sm:w-9 sm:h-9 rounded-full border flex items-center justify-center shrink-0 transition-all duration-300 ${openService === 0 ? 'rotate-180 bg-[#8BBA82] border-[#8BBA82] text-white shadow-sm' : 'border-[#E8EBE8] text-[#8BBA82] bg-white'}`}>
+                    <div className={`md:hidden w-8 h-8 sm:w-9 sm:h-9 rounded-full border flex items-center justify-center shrink-0 transition-all duration-300 ${openService === 0 ? 'rotate-180 bg-white border-white text-[#61403A] shadow-sm' : 'border-white/35 text-white bg-white/15'}`}>
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
                     </div>
 
                     <div className="hidden md:flex items-center gap-2.5 shrink-0">
-                      <span className="px-3 py-1 rounded-full bg-[#EEF3ED] text-[#8BBA82] text-xs font-extrabold">Официально</span>
-                      <span className="text-2xl font-black text-[#61403A]/15 group-hover:text-[#8BBA82]/40 transition-colors">01</span>
+                      <span className="px-3 py-1 rounded-full bg-white/20 text-white text-xs font-extrabold border border-white/25 backdrop-blur-sm">Официально</span>
+                      <span className="text-2xl font-black text-white/35">01</span>
                     </div>
                   </button>
 
-                  <div className={`${openService === 0 ? 'block pt-3 border-t border-[#E8EBE8]/80' : 'hidden'} md:block md:pt-0 md:border-none`}>
-                    <h3 className="hidden md:block font-extrabold text-[22px] text-[#61403A] mb-2 leading-tight">Техосмотр категорий L, M1, N1</h3>
-                    <p className="text-[#657080] font-medium text-[13.5px] sm:text-[14px] md:text-[15px] leading-relaxed">
-                      Любые марки легковых и грузовых автомобилей до 3,5 тонн и мотоциклы. Проверка по 55 параметрам с внесением в базу ЕАИСТО.
+                  <div className={`${openService === 0 ? 'block pt-3 border-t border-white/25' : 'hidden'} md:block md:pt-0 md:border-none`}>
+                    <h3 className="hidden md:block font-extrabold text-[22px] text-white mb-2 leading-tight drop-shadow-sm">Техосмотр категорий L, M1, N1</h3>
+                    <p className="text-white/95 font-medium text-[13.5px] sm:text-[14px] md:text-[15px] leading-relaxed">
+                      Любые марки легковых и грузовых автомобилей до 3,5 тонн и мотоциклы. Внесение в базу ЕАИСТО.
                     </p>
                   </div>
                 </div>
 
-                <div className={`${openService === 0 ? 'flex' : 'hidden'} md:flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 pt-3.5 md:pt-4 mt-3.5 md:mt-4 border-t border-[#E8EBE8]`}>
-                  <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[#657080]">За 30 минут</span>
-                 <button
+                <div className={`${openService === 0 ? 'flex' : 'hidden'} md:flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 pt-3.5 md:pt-4 mt-3.5 md:mt-4 border-t border-white/25`}>
+                  <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-white/85">За 30 минут</span>
+                  <button
                     type="button"
                     onClick={() => setActiveDrawer('cameras')}
-                    className="w-full sm:w-auto text-center sm:text-right px-4 py-2.5 sm:p-0 rounded-xl sm:rounded-none bg-[#8BBA82] sm:bg-transparent text-[13px] sm:text-sm font-extrabold text-white sm:text-[#5B8E52] hover:text-[#61403A] transition-colors cursor-pointer shadow-sm sm:shadow-none"
+                    className="w-full sm:w-auto text-center sm:text-right px-4 py-2.5 sm:px-3.5 sm:py-1.5 rounded-xl sm:rounded-full bg-white text-[13px] sm:text-xs font-extrabold text-[#61403A] hover:bg-[#61403A] hover:text-white transition-colors cursor-pointer shadow-sm"
                   >
                     Камеры и штрафы →
                   </button>
@@ -832,12 +783,12 @@ const [today, setToday] = useState<Date | null>(null);
                   <div className={`${openService === 1 ? 'block pt-3 border-t border-[#E8EBE8]/80' : 'hidden'} md:block md:pt-0 md:border-none`}>
                     <h3 className="hidden md:block font-extrabold text-[22px] text-[#61403A] mb-2 leading-tight">Оформление ОСАГО</h3>
                     <p className="text-[#657080] font-medium text-[13.5px] sm:text-[14px] md:text-[15px] leading-relaxed">
-                      Подберем и оформим страховой полис прямо на месте после прохождения осмотра. Сравним предложения ведущих страховых компаний.
+                      Подберем и оформим страховой полис прямо на месте во время прохождения осмотра. Сравним предложения ведущих страховых компаний.
                     </p>
                   </div>
                 </div>
 
-                <div className={`${openService === 1 ? 'flex' : 'hidden'} md:flex items-center justify-between pt-3.5 md:pt-4 mt-3.5 md:mt-4 border-t border-[#E8EBE8]`}>
+                <div className={`${openService === 1 ? 'flex' : 'hidden'} md:flex items-center justify-between pt-3.5 md:pt-4 mt-3.5 md:mt-4 border-t border-[#E8EBE8] md:min-h-[28px]`}>
                   <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[#657080]">Е-ОСАГО и бумажный бланк</span>
                 </div>
               </div>
@@ -929,7 +880,7 @@ const [today, setToday] = useState<Date | null>(null);
                   <div className={`${openService === 3 ? 'block pt-3 border-t border-white/15' : 'hidden'} md:block md:pt-0 md:border-none`}>
                     <h3 className="hidden md:block font-extrabold text-[22px] text-white mb-2 leading-tight">Переоборудование автомобилей</h3>
                     <p className="text-white/80 font-medium text-[13.5px] sm:text-[14px] md:text-[15px] leading-relaxed">
-                      Помогаем с оформлением внесения изменений в конструкцию ТС: установка фаркопа, газового оборудования (ГБО), замена двигателя и другие доработки.
+                      Помогаем с оформлением внесения изменений в конструкцию ТС: установка фаркопа, газового оборудования, замена двигателя и другие доработки.
                     </p>
                   </div>
                 </div>
@@ -950,7 +901,7 @@ const [today, setToday] = useState<Date | null>(null);
         </motion.div>
       </section>
 
-      {/* === БЛОК: ЗАКОН И БЕЗОПАСНОСТЬ (Адаптированные вкладки для мобильных) === */}
+      {/* === БЛОК: ЗАКОН И БЕЗОПАСНОСТЬ === */}
       <motion.section
         id="law"
         initial="hidden"
@@ -975,7 +926,6 @@ const [today, setToday] = useState<Date | null>(null);
           </p>
         </div>
 
-        {/* Переключатель 3 вкладок: на мобильных — удобные полноширинные кнопки, на ПК — в ряд */}
         <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center justify-center gap-2 sm:gap-3 mb-6 sm:mb-10">
           {[
             { id: 'to', label: '1. Техосмотр и камеры' },
@@ -1046,14 +996,14 @@ const [today, setToday] = useState<Date | null>(null);
               <div className="bg-white/10 p-3.5 sm:p-4 rounded-2xl border border-white/15">
                 <div className="text-[10.5px] sm:text-[11px] uppercase font-extrabold text-[#8BBA82] mb-1">Проверка инспектором и камерами (ч. 5 ст. 4.1 КоАП РФ)</div>
                 <p className="text-[13px] sm:text-[14.5px] text-white/95 leading-snug">
-                  Наличие ТО проверяет инспектор ГИБДД при остановке, также нарушение фиксируют камеры. Дважды оштрафовать за одно и то же нарушение нельзя (например, если две камеры сработали одновременно). Но если вы снова управляете авто без ТО в другое время в тот же день — повторный штраф правомерен.
+                  Наличие ТО проверяет инспектор ГИБДД при остановке, также нарушение фиксируют камеры. Дважды оштрафовать за одно и то же нарушение нельзя (например, если две камеры сработали одновременно). Но если в тот же день на этом же месте либо в другом вас остановили или зафиксировали снова без ТО — <strong>второй штраф будет правомерным</strong>.
                 </p>
               </div>
 
               <div className="bg-white/10 p-3.5 sm:p-4 rounded-2xl border border-white/15">
-                <div className="text-[10.5px] sm:text-[11px] uppercase font-extrabold text-[#8BBA82] mb-1">Физлица (личные поездки) • Штраф 2 000 ₽</div>
+                <div className="text-[10.5px] sm:text-[11px] uppercase font-extrabold text-[#8BBA82] mb-1">Водитель ТС (личные поездки) • Штраф 2 000 ₽</div>
                 <p className="text-[13px] sm:text-[14.5px] text-white/95 leading-snug">
-                  Для личного авто ТО не требуется — контроль за водителем и ДПС. <strong>При наличии действующей диагностической карты проверка техсостояния на дороге не проводится.</strong> Если ТО обязателен и отсутствует — штраф <strong>2 000 ₽</strong> (ст. 12.5 КоАП).
+                  Для личного авто ТО не требуется — контроль за водителем и ДПС. <strong>При наличии действующей диагностической карты проверка техсостояния на дороге не проводится (исключение — неисправности, при которых запрещается эксплуатация ТС).</strong> Если ТО обязателен и отсутствует — штраф водителю ТС <strong>2 000 ₽</strong> (ст. 12.5 КоАП).
                 </p>
               </div>
 
@@ -1089,23 +1039,23 @@ const [today, setToday] = useState<Date | null>(null);
               <h3 className="font-extrabold text-[18px] sm:text-[24px] text-white">Штрафы за стёртые и нечитаемые знаки</h3>
 
               <div className="bg-white/10 p-3.5 sm:p-4 rounded-2xl border border-white/15">
-                <div className="text-[11px] sm:text-xs font-extrabold uppercase text-[#8BBA82] mb-1">Ч. 1 ст. 12.2 КоАП РФ • Штраф 500 ₽ (или предупреждение)</div>
+                <div className="text-[11px] sm:text-xs font-extrabold uppercase text-[#8BBA82] mb-1">Ч. 1 ст. 12.2 КоАП РФ • Штраф водителю ТС 500 ₽</div>
                 <p className="text-[13px] sm:text-[14.5px] text-white/95 leading-snug">
-                  Если номер просто плохо читается (краска сошла естественным путём, после ДТП или трения о сугроб), но все символы остаются однозначно узнаваемыми.
+                  Если номер просто плохо читается (краска сошла естественным путём, после ДТП или трения о сугроб), но все символы остаются однозначно узнаваемыми — предупреждение или штраф водителю ТС <strong>500 ₽</strong>.
                 </p>
               </div>
 
               <div className="bg-white/10 p-3.5 sm:p-4 rounded-2xl border border-red-400/40">
-                <div className="text-[11px] sm:text-xs font-extrabold uppercase text-red-300 mb-1">Ч. 2 ст. 12.2 КоАП РФ • Штраф 5 000 ₽ или лишение прав на 1–3 мес.</div>
+                <div className="text-[11px] sm:text-xs font-extrabold uppercase text-red-300 mb-1">Ч. 2 ст. 12.2 КоАП РФ • Штраф водителю ТС 5 000 ₽ или лишение прав</div>
                 <p className="text-[13px] sm:text-[14.5px] text-white/95 leading-snug">
-                  Если из-за потёртости символ визуально начинает напоминать другой знак (например, <strong>«О»</strong> стёрлась и похожа на <strong>«С»</strong>, или <strong>«Х»</strong> — на <strong>«У»</strong>) — инспектор может квалифицировать это как видоизменённый номер.
+                  Если из-за потёртости символ визуально начинает напоминать другой знак (например, <strong>«О»</strong> стёрлась и похожа на <strong>«С»</strong>, или <strong>«Х»</strong> — на <strong>«У»</strong>) — штраф водителю ТС <strong>5 000 ₽</strong> или лишение прав на <strong>1–3 месяца</strong>.
                 </p>
               </div>
             </div>
           </div>
         )}
 
-        {/* Вкладка 3: Переоборудование ТС (На мобильных — компактная плашка с раскрывающимся списком по кнопке) */}
+        {/* Вкладка 3: Переоборудование ТС */}
         {lawTab === 'tuning' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8 items-start">
             <div className="bg-white rounded-[22px] sm:rounded-[32px] p-4 sm:p-7 md:p-10 shadow-sm border border-[#E8EBE8]">
@@ -1157,17 +1107,20 @@ const [today, setToday] = useState<Date | null>(null);
             <div className="bg-[#61403A] rounded-[22px] sm:rounded-[32px] p-4 sm:p-7 md:p-10 shadow-xl text-white space-y-3.5">
               <h3 className="font-extrabold text-[18px] sm:text-[24px] text-white">Ответственность и порядок устранения</h3>
 
-              <div className="bg-white/10 p-3.5 sm:p-4 rounded-2xl border border-white/15">
-                <div className="text-[11px] sm:text-xs font-extrabold uppercase text-[#8BBA82] mb-1">1. Штраф 500 ₽ и предписание на 10 дней (ч. 1 ст. 12.5 КоАП)</div>
-                <p className="text-[13px] sm:text-[14.5px] text-white/95 leading-snug">
-                  За незарегистрированные изменения в ПТС/СТС выписывается штраф <strong>500 ₽</strong> и требование: вернуть авто в исходное состояние или официально узаконить изменения (экспертиза, разрешение ГАИ, отметка в документах). Максимальный срок — <strong>10 дней</strong>.
+              {/* Предписание до 10 дней — белый фон + красный акцент */}
+              <div className="bg-white text-[#151C2B] p-3.5 sm:p-4 rounded-2xl border-2 border-red-400/70 shadow-sm">
+                <div className="inline-block px-2.5 py-0.5 rounded-lg bg-red-50 text-red-600 text-[11px] sm:text-xs font-extrabold uppercase mb-1.5">
+                  1. Предписание • до 10 дней (ч. 1 ст. 12.5 КоАП)
+                </div>
+                <p className="text-[13px] sm:text-[14.5px] text-[#151C2B]/90 leading-snug">
+                  За незарегистрированные в ПТС/СТС изменения — штраф водителю ТС <strong className="text-[#61403A]">500 ₽</strong> и <strong className="text-red-600">до 10 дней</strong> на демонтаж или официальное оформление через экспертизу и ГАИ.
                 </p>
               </div>
 
               <div className="bg-white/10 p-3.5 sm:p-4 rounded-2xl border border-red-400/40">
                 <div className="text-[11px] sm:text-xs font-extrabold uppercase text-red-300 mb-1">2. Прекращение регистрации и лишение прав (ст. 12.1 КоАП)</div>
                 <p className="text-[13px] sm:text-[14.5px] text-white/95 leading-snug">
-                  Если проигнорировать предписание, ГАИ <strong>прекращает регистрацию авто</strong>. За езду на таком авто: первый раз — штраф <strong>500–800 ₽</strong>, повторно — штраф <strong>5 000 ₽</strong> или лишение прав на срок <strong>до 3 месяцев</strong>.
+                  Если проигнорировать предписание, ГАИ <strong>прекращает регистрацию авто</strong>. За езду на таком авто: первый раз — штраф водителю ТС <strong>500–800 ₽</strong>, повторно — штраф водителю ТС <strong>5 000 ₽</strong> или лишение прав на срок <strong>до 3 месяцев</strong>.
                 </p>
               </div>
             </div>
@@ -1227,7 +1180,8 @@ const [today, setToday] = useState<Date | null>(null);
         </div>
       </motion.section>
 
-      {/* ФОРМА БРОНИРОВАНИЯ + ЖИВОЙ ЭЛЕКТРОННЫЙ ТАЛОН + БЫСТРЫЕ КНОПКИ ДАТЫ */}
+      {/* ФОРМА БРОНИРОВАНИЯ + ЖИВОЙ ЭЛЕКТРОННЫЙ ТАЛОН (Номер авто — обязательный, Телефон — необязательный, Категория авто убрана) */}
+      {/* ФОРМА БРОНИРОВАНИЯ + ЖИВОЙ ЭЛЕКТРОННЫЙ ТАЛОН В ЛЕВОМ СТОЛБИКЕ */}
       <section className="relative z-10 pt-8 md:pt-12 pb-12 md:pb-24 overflow-hidden">
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-12">
           <motion.div
@@ -1236,136 +1190,111 @@ const [today, setToday] = useState<Date | null>(null);
             viewport={{ once: true, margin: "-100px" }}
             variants={zoomIn}
             id="booking"
-            className="scroll-mt-28 md:scroll-mt-32 bg-[#61403A] p-6 sm:p-8 md:p-12 lg:p-14 rounded-[28px] sm:rounded-[40px] text-white shadow-2xl relative overflow-hidden"
+            className="scroll-mt-28 md:scroll-mt-32 bg-[#61403A] p-4 sm:p-8 md:p-12 lg:p-14 rounded-[26px] sm:rounded-[40px] text-white shadow-2xl relative overflow-hidden"
           >
             <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none"></div>
             <div className="absolute bottom-0 left-0 w-96 h-96 bg-[#8BBA82]/10 rounded-full blur-3xl -ml-32 -mb-32 pointer-events-none"></div>
 
             <div className="relative z-10">
-              {/* Шапка блока бронирования */}
-              <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-8 md:mb-10">
-                <div>
-                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold mb-2">Бронирование времени</h2>
-                  <p className="text-[#8BBA82] font-medium opacity-95 text-sm sm:text-base">
-                    Заполните данные автомобиля и выберите удобное время — ваш электронный талон сформируется автоматически.
-                  </p>
-                </div>
-
-                {/* Живой электронный талон-превью (Вариант 1) */}
-                <div className="relative overflow-hidden bg-white/10 backdrop-blur-xl border border-white/25 rounded-[22px] p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4 shrink-0 lg:min-w-[420px]">
-                  <div className="flex flex-col gap-1.5 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-[#8BBA82] animate-pulse"></span>
-                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-white/70">
-                        {status.type === 'success' ? 'Талон подтверждён' : 'Электронный талон на линию'}
-                      </span>
-                    </div>
-
-                    {/* Номерной знак в стиле РФ */}
-                    <div className="inline-flex items-stretch bg-white text-[#151C2B] rounded-lg border-2 border-[#151C2B] overflow-hidden shadow-md w-fit">
-                      <div className={`px-3 py-1 font-black tracking-wider text-base sm:text-lg flex items-center ${ticketPlate.isPlaceholder ? 'opacity-40' : ''}`}>
-                        {ticketPlate.main}
-                      </div>
-                      <div className="border-l-2 border-[#151C2B] px-2 py-0.5 flex flex-col items-center justify-center bg-white leading-none">
-                        <span className={`font-black text-xs sm:text-sm ${ticketPlate.isPlaceholder ? 'opacity-40' : ''}`}>
-                          {ticketPlate.region}
-                        </span>
-                        <span className="text-[8px] font-extrabold tracking-tighter flex items-center gap-0.5 mt-0.5">
-                          RUS
-                          <span className="inline-block w-2.5 h-1.5 border border-black/20 overflow-hidden">
-                            <span className="block h-1/3 bg-white"></span>
-                            <span className="block h-1/3 bg-[#0039A6]"></span>
-                            <span className="block h-1/3 bg-[#D52B1E]"></span>
-                          </span>
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="sm:border-l sm:border-white/15 sm:pl-4 flex flex-row sm:flex-col justify-between w-full sm:w-auto gap-2 text-xs">
-                    <div>
-                      <div className="text-white/50 text-[10px] uppercase font-bold">Дата и время</div>
-                      <div className="font-extrabold text-white text-sm">
-                        {formData.date
-                          ? `${formData.date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })}${formData.time ? ` • ${formData.time}` : ''}`
-                          : 'Не выбрано'}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-white/50 text-[10px] uppercase font-bold">Пост ТО</div>
-                      <div className="font-bold text-[#8BBA82]">Доватора, зд. 271</div>
-                    </div>
-                  </div>
-                </div>
+              <div className="mb-6 sm:mb-8 md:mb-10">
+                <h2 className="text-[24px] sm:text-3xl md:text-4xl font-extrabold mb-1.5 sm:mb-2 leading-tight">Бронирование времени</h2>
+                <p className="text-[#8BBA82] font-medium opacity-95 text-[13.5px] sm:text-base leading-relaxed">
+                  Укажите госномер автомобиля и выберите удобное время — ваш электронный талон сформируется автоматически.
+                </p>
               </div>
 
-              <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-10 items-start">
-                {/* ЛЕВЫЙ СТОЛБИК: Данные автомобиля и контакты */}
-                <div className="space-y-4 sm:space-y-5 bg-white/5 p-5 sm:p-6 md:p-8 rounded-[22px] sm:rounded-[28px] border border-white/10">
+              <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8 lg:gap-10 items-start">
+                {/* ЛЕВЫЙ СТОЛБИК: Номер машины, Телефон и Электронный талончик сразу под телефоном */}
+                <div className="space-y-4 sm:space-y-5 bg-white/5 p-4 sm:p-6 md:p-8 rounded-[20px] sm:rounded-[28px] border border-white/10">
                   <div>
                     <label className="block text-[10px] md:text-xs font-bold uppercase tracking-wider text-white/60 mb-1.5 sm:mb-2 pl-1">
-                      Номер машины <span className="normal-case font-medium text-white/45">(необязательно)</span>
+                      Номер машины
                     </label>
                     <input
+                      required
                       type="text"
                       name="carNumber"
                       maxLength={12}
                       value={formData.carNumber}
                       onChange={handleChange}
-                      className="w-full p-3.5 sm:p-4 md:p-5 bg-white/10 border border-white/20 rounded-[16px] sm:rounded-[20px] text-white placeholder-white/30 focus:outline-none focus:border-[#8BBA82] focus:bg-white/20 uppercase text-sm md:text-base transition-all"
+                      className="w-full p-3.5 sm:p-4 md:p-5 bg-white/10 border border-white/20 rounded-[16px] sm:rounded-[20px] text-white placeholder-white/30 focus:outline-none focus:border-[#8BBA82] focus:bg-white/20 uppercase text-[15px] md:text-base transition-all"
                       placeholder="А 123 АА 161"
                     />
                   </div>
 
                   <div>
                     <label className="block text-[10px] md:text-xs font-bold uppercase tracking-wider text-white/60 mb-1.5 sm:mb-2 pl-1">
-                      Телефон для связи
+                      Телефон для связи <span className="normal-case font-medium text-white/45">(необязательно)</span>
                     </label>
                     <input
-                      required
                       type="tel"
                       name="phone"
                       maxLength={20}
                       value={formData.phone}
                       onChange={handleChange}
-                      className="w-full p-3.5 sm:p-4 md:p-5 bg-white/10 border border-white/20 rounded-[16px] sm:rounded-[20px] text-white placeholder-white/30 focus:outline-none focus:border-[#8BBA82] focus:bg-white/20 text-sm md:text-base transition-all"
+                      className="w-full p-3.5 sm:p-4 md:p-5 bg-white/10 border border-white/20 rounded-[16px] sm:rounded-[20px] text-white placeholder-white/30 focus:outline-none focus:border-[#8BBA82] focus:bg-white/20 text-[15px] md:text-base transition-all"
                       placeholder="+7 (___) ___-__-__"
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-[10px] md:text-xs font-bold uppercase tracking-wider text-white/60 mb-1.5 sm:mb-2 pl-1">
-                      Категория транспорта
-                    </label>
-                    <div className="relative">
-                      <select
-                        name="category"
-                        value={formData.category}
-                        onChange={handleChange}
-                        className="w-full p-3.5 sm:p-4 md:p-5 pr-11 bg-[#8BBA82]/20 border border-[#8BBA82] rounded-[16px] sm:rounded-[20px] text-white focus:outline-none focus:border-white text-sm md:text-base appearance-none transition-all cursor-pointer font-semibold"
-                      >
-                        <option value="M1 Легковые автомобили" className="bg-[#61403A] text-white">M1 Легковые автомобили</option>
-                        <option value="L Мотоциклы" className="bg-[#61403A] text-white">L Мотоциклы</option>
-                        <option value="N1 Грузовики (до 3,5т)" className="bg-[#61403A] text-white">N1 Грузовики (до 3,5 т)</option>
-                      </select>
-                      <svg className="w-5 h-5 text-white/80 pointer-events-none absolute right-4 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                      </svg>
+                  {/* Живой электронный талончик — закреплён сразу под полем телефона */}
+                  <div className="relative overflow-hidden bg-white/10 backdrop-blur-xl border border-white/25 rounded-[18px] sm:rounded-[22px] p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 sm:gap-4">
+                    <div className="flex flex-col gap-2 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-[#8BBA82] animate-pulse shrink-0"></span>
+                        <span className="text-[10px] font-extrabold uppercase tracking-widest text-white/75">
+                          {status.type === 'success' ? 'Талон подтверждён' : 'Электронный талон на линию'}
+                        </span>
+                      </div>
+
+                      {/* Номерной знак в стиле РФ */}
+                      <div className="inline-flex items-stretch bg-white text-[#151C2B] rounded-lg border-2 border-[#151C2B] overflow-hidden shadow-md w-fit max-w-full">
+                        <div className={`px-3 py-1.5 font-black tracking-wider text-[16px] sm:text-lg flex items-center whitespace-nowrap ${ticketPlate.isPlaceholder ? 'opacity-40' : ''}`}>
+                          {ticketPlate.main}
+                        </div>
+                        <div className="border-l-2 border-[#151C2B] px-2.5 py-1 flex flex-col items-center justify-center bg-white leading-none shrink-0">
+                          <span className={`font-black text-xs sm:text-sm ${ticketPlate.isPlaceholder ? 'opacity-40' : ''}`}>
+                            {ticketPlate.region}
+                          </span>
+                          <span className="text-[8px] font-extrabold tracking-tighter flex items-center gap-0.5 mt-0.5">
+                            RUS
+                            <span className="inline-block w-2.5 h-1.5 border border-black/20 overflow-hidden">
+                              <span className="block h-1/3 bg-white"></span>
+                              <span className="block h-1/3 bg-[#0039A6]"></span>
+                              <span className="block h-1/3 bg-[#D52B1E]"></span>
+                            </span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="w-full sm:w-auto pt-2.5 sm:pt-0 border-t sm:border-t-0 sm:border-l border-white/15 sm:pl-4 flex flex-row sm:flex-col justify-between gap-3 text-xs">
+                      <div>
+                        <div className="text-white/50 text-[10px] uppercase font-bold">Дата и время</div>
+                        <div className="font-extrabold text-white text-[13px] sm:text-sm mt-0.5">
+                          {formData.date
+                            ? `${formData.date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })}${formData.time ? ` • ${formData.time}` : ''}`
+                            : 'Не выбрано'}
+                        </div>
+                      </div>
+                      <div className="text-right sm:text-left">
+                        <div className="text-white/50 text-[10px] uppercase font-bold">Пост ТО</div>
+                        <div className="font-bold text-[#8BBA82] text-[13px] sm:text-sm mt-0.5">Доватора, зд. 271</div>
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 {/* ПРАВЫЙ СТОЛБИК: Быстрый выбор дня, календарь и слоты */}
-                <div className="space-y-4 sm:space-y-5 bg-white/5 p-5 sm:p-6 md:p-8 rounded-[22px] sm:rounded-[28px] border border-white/10 flex flex-col justify-between h-full">
+                <div className="space-y-4 sm:space-y-5 bg-white/5 p-4 sm:p-6 md:p-8 rounded-[20px] sm:rounded-[28px] border border-white/10 flex flex-col justify-between h-full">
                   <div className="space-y-4 sm:space-y-5">
                     <div>
-                      <div className="flex flex-wrap items-center justify-between gap-2 mb-2 pl-1">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2 pl-1">
                         <label className="block text-[10px] md:text-xs font-bold uppercase tracking-wider text-white/60">
                           Выберите день визита
                         </label>
 
-                        {/* Быстрые кнопки выбора даты в один клик (Вариант 2) */}
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           {quickDates.map((qd) => {
                             const active = qd.date ? isSameDay(formData.date, qd.date) : false;
                             return (
@@ -1377,10 +1306,10 @@ const [today, setToday] = useState<Date | null>(null);
                                   target.setDate(target.getDate() + qd.offset);
                                   handleSelectDate(target);
                                 }}
-                                className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer ${
+                                className={`px-3 py-1.5 sm:px-2.5 sm:py-1 rounded-full text-[11.5px] sm:text-[11px] font-bold transition-all cursor-pointer ${
                                   active
                                     ? 'bg-[#8BBA82] text-white shadow-sm'
-                                    : 'bg-white/10 text-white/80 hover:bg-white/20'
+                                    : 'bg-white/10 text-white/85 hover:bg-white/20'
                                 }`}
                               >
                                 {qd.label}
@@ -1398,11 +1327,11 @@ const [today, setToday] = useState<Date | null>(null);
                           dateFormat="dd MMMM yyyy"
                           minDate={today}
                           placeholderText="Или выберите дату в календаре"
-                          className="w-full p-3.5 sm:p-4 md:p-5 bg-white/10 border border-white/20 rounded-[16px] sm:rounded-[20px] text-white placeholder-white/50 focus:outline-none focus:border-[#8BBA82] focus:bg-white/20 text-sm md:text-[17px] font-bold cursor-pointer transition-all"
+                          className="w-full p-3.5 sm:p-4 md:p-5 bg-white/10 border border-white/20 rounded-[16px] sm:rounded-[20px] text-white placeholder-white/50 focus:outline-none focus:border-[#8BBA82] focus:bg-white/20 text-[15px] md:text-[17px] font-bold cursor-pointer transition-all"
                           wrapperClassName="w-full"
                         />
                       ) : (
-                        <div className="w-full p-3.5 sm:p-4 md:p-5 bg-white/10 border border-white/20 rounded-[16px] sm:rounded-[20px] text-white/50 text-sm md:text-[17px] font-bold">
+                        <div className="w-full p-3.5 sm:p-4 md:p-5 bg-white/10 border border-white/20 rounded-[16px] sm:rounded-[20px] text-white/50 text-[15px] md:text-[17px] font-bold">
                           Или выберите дату в календаре
                         </div>
                       )}
@@ -1410,7 +1339,7 @@ const [today, setToday] = useState<Date | null>(null);
 
                     {formData.date ? (
                       <div className="relative z-20 pt-1">
-                        <div className="flex items-center justify-between mb-2.5 sm:mb-3 pl-1">
+                        <div className="flex items-center justify-between gap-2 mb-2.5 sm:mb-3 pl-1">
                           <label className="block text-[10px] md:text-xs font-bold uppercase tracking-wider text-white/60">
                             {isLoadingSlots ? 'Обновление расписания...' : 'Доступные слоты'}
                           </label>
@@ -1424,7 +1353,7 @@ const [today, setToday] = useState<Date | null>(null);
                             На сегодня свободных слотов уже нет. Пожалуйста, выберите другой день.
                           </div>
                         ) : (
-                          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 md:gap-2.5 max-h-52 overflow-y-auto pr-1 sm:pr-2 custom-scrollbar relative z-20">
+                          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 md:gap-2.5 max-h-56 overflow-y-auto pr-1 sm:pr-2 custom-scrollbar relative z-20">
                             {availableSlots.map(({ time, isBooked }) => {
                               const isSelected = formData.time === time;
                               return (
@@ -1438,7 +1367,7 @@ const [today, setToday] = useState<Date | null>(null);
                                     setFormData((prev) => ({ ...prev, time }));
                                   }}
                                   title={isBooked ? "Это время уже занято" : `Выбрать ${time}`}
-                                  className={`py-2.5 px-1 md:px-2 text-xs sm:text-sm font-bold rounded-xl border transition-all whitespace-nowrap select-none ${
+                                  className={`py-3 sm:py-2.5 px-1 md:px-2 text-[13px] sm:text-sm font-bold rounded-xl border transition-all whitespace-nowrap select-none ${
                                     isBooked
                                       ? 'bg-white/5 border-white/10 text-white/30 line-through cursor-not-allowed'
                                       : isSelected
@@ -1454,7 +1383,7 @@ const [today, setToday] = useState<Date | null>(null);
                         )}
                       </div>
                     ) : (
-                      <div className="p-4 sm:p-5 rounded-[16px] sm:rounded-[20px] bg-white/5 border border-dashed border-white/20 text-white/60 text-xs sm:text-sm text-center">
+                      <div className="p-4 sm:p-5 rounded-[16px] sm:rounded-[20px] bg-white/5 border border-dashed border-white/20 text-white/65 text-xs sm:text-sm text-center leading-relaxed">
                         Нажмите «Сегодня», «Завтра» или выберите дату в календаре, чтобы увидеть свободные окна
                       </div>
                     )}
@@ -1464,7 +1393,7 @@ const [today, setToday] = useState<Date | null>(null);
                     <button
                       type="submit"
                       disabled={!formData.time || isSubmitting}
-                      className={`w-full font-bold py-4 sm:py-5 rounded-[16px] sm:rounded-[20px] transition-all shadow-lg text-[16px] sm:text-[17px] ${
+                      className={`w-full font-bold py-4 sm:py-5 rounded-[16px] sm:rounded-[20px] transition-all shadow-lg text-[15px] sm:text-[17px] ${
                         formData.time && !isSubmitting
                           ? 'bg-[#8BBA82] hover:bg-[#77a66f] text-white shadow-[#8BBA82]/30 hover:-translate-y-1 cursor-pointer'
                           : 'bg-white/10 text-white/40 cursor-not-allowed shadow-none'
@@ -1650,14 +1579,14 @@ const [today, setToday] = useState<Date | null>(null);
           background-color: transparent !important; 
         }
       ` }} />
-      {/* === СТИЛЬНОЕ ЦЕНТРАЛЬНОЕ МОДАЛЬНОЕ ОКНО «ПАМЯТКА ВОДИТЕЛЯ» (Адаптировано под мобильные) === */}
+
+      {/* === СТИЛЬНОЕ ЦЕНТРАЛЬНОЕ МОДАЛЬНОЕ ОКНО «ПАМЯТКА ВОДИТЕЛЯ» === */}
       {activeDrawer && (
         <div
           role="dialog"
           aria-modal="true"
           className="fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-6"
         >
-          {/* Тёмное размытое затемнение фона */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -1665,22 +1594,18 @@ const [today, setToday] = useState<Date | null>(null);
             className="fixed inset-0 bg-[#151C2B]/65 backdrop-blur-md transition-opacity cursor-pointer"
           />
 
-          {/* Центральная карточка модального окна */}
           <motion.div
             initial={{ opacity: 0, scale: 0.94, y: 16 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ type: "spring", stiffness: 280, damping: 24 }}
             className="relative z-10 w-full max-w-[660px] max-h-[90dvh] bg-[#F8F9F7] text-[#151C2B] rounded-[24px] sm:rounded-[36px] shadow-[0_30px_90px_rgba(0,0,0,0.35)] border border-white/80 flex flex-col overflow-hidden"
           >
-            {/* Верхняя акцентная полоска */}
             <div className="h-1.5 w-full bg-gradient-to-r from-[#8BBA82] via-[#61403A] to-[#8BBA82] shrink-0" />
 
-            {/* Фирменная шапка окна */}
             <div className="relative px-4 py-4 sm:px-8 sm:py-6 bg-[#61403A] text-white flex items-start justify-between gap-3 sm:gap-4 shrink-0 overflow-hidden">
               <div className="absolute -right-12 -top-12 w-44 h-44 rounded-full bg-[#8BBA82]/25 blur-2xl pointer-events-none" />
 
               <div className="relative z-10 flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
-                {/* Иконка показывается с sm (640px+), чтобы на узких телефонах заголовок не сжимался */}
                 <div className="hidden sm:flex w-12 h-12 rounded-2xl bg-white/10 border border-white/20 text-[#8BBA82] items-center justify-center shrink-0 backdrop-blur-md shadow-inner mt-0.5">
                   {activeDrawer === 'cameras' && (
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1724,37 +1649,92 @@ const [today, setToday] = useState<Date | null>(null);
               </button>
             </div>
 
-            {/* Прокручиваемое тело окна */}
             <div className="p-4 sm:p-7 overflow-y-auto space-y-3 sm:space-y-4 text-[13px] sm:text-[15px] leading-relaxed custom-scrollbar overscroll-contain">
               {activeDrawer === 'cameras' && (
                 <>
-                  <div className="p-3.5 sm:p-5 rounded-2xl bg-white border border-[#E8EBE8] shadow-sm">
-                    <div className="flex flex-wrap items-center justify-between gap-1.5 mb-2">
-                      <span className="font-extrabold text-[#61403A] text-[14.5px] sm:text-base">Проверка инспектором и камерами</span>
-                      <span className="px-2.5 py-0.5 rounded-lg bg-[#EEF3ED] text-[#8BBA82] text-[11px] sm:text-xs font-extrabold shrink-0">ч. 5 ст. 4.1 КоАП</span>
-                    </div>
-                    <p className="text-[#657080]">
-                      Наличие техосмотра проверяет инспектор ГИБДД при остановке, также нарушение фиксируют дорожные камеры. Штрафовать дважды за одно и то же правонарушение незаконно (например, если две камеры одновременно зафиксировали отсутствие ТО). Но если в тот же день вы снова выехали без ТО в другое время — <strong>второй штраф будет правомерным</strong>.
-                    </p>
+                  {/* Компактный переключатель вкладок внутри окна */}
+                  <div className="grid grid-cols-2 gap-1.5 p-1 rounded-2xl bg-[#EEF3ED] border border-[#E8EBE8]">
+                    <button
+                      type="button"
+                      onClick={() => setCameraModalTab('fines')}
+                      className={`py-2 px-3 rounded-xl text-xs sm:text-[13px] font-extrabold transition-all cursor-pointer ${
+                        cameraModalTab === 'fines'
+                          ? 'bg-[#61403A] text-white shadow-sm'
+                          : 'text-[#61403A]/75 hover:text-[#61403A]'
+                      }`}
+                    >
+                      Камеры и штрафы
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCameraModalTab('regress')}
+                      className={`py-2 px-3 rounded-xl text-xs sm:text-[13px] font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                        cameraModalTab === 'regress'
+                          ? 'bg-[#61403A] text-white shadow-sm'
+                          : 'text-[#61403A]/75 hover:text-[#61403A]'
+                      }`}
+                    >
+                      <span>ДТП и регресс ОСАГО</span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+                    </button>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
-                    <div className="p-3.5 sm:p-4 rounded-2xl bg-white border border-[#E8EBE8] shadow-sm">
-                      <div className="text-[10.5px] sm:text-[11px] font-extrabold uppercase text-[#8BBA82] mb-0.5 sm:mb-1">Должностные лица</div>
-                      <div className="text-xl sm:text-2xl font-black text-[#61403A] mb-1">500 ₽</div>
-                      <p className="text-xs text-[#657080] leading-snug">Механик или директор за выпуск авто без ТО (ч. 1 ст. 12.31 КоАП).</p>
+                  {cameraModalTab === 'fines' ? (
+                    <>
+                      <div className="p-3.5 sm:p-5 rounded-2xl bg-white border border-[#E8EBE8] shadow-sm">
+                        <div className="flex flex-wrap items-center justify-between gap-1.5 mb-2">
+                          <span className="font-extrabold text-[#61403A] text-[14.5px] sm:text-base">Проверка инспектором и камерами</span>
+                          <span className="px-2.5 py-0.5 rounded-lg bg-[#EEF3ED] text-[#5B8E52] text-[11px] sm:text-xs font-extrabold shrink-0">ч. 5 ст. 4.1 КоАП</span>
+                        </div>
+                        <p className="text-[#657080]">
+                          Наличие техосмотра проверяет инспектор ГИБДД при остановке, также нарушение фиксируют дорожные камеры. Штрафовать дважды за одно и то же правонарушение незаконно (например, если две камеры одновременно зафиксировали отсутствие ТО). Но если в тот же день на этом же месте либо в другом вас остановили или зафиксировали снова без ТО — <strong>второй штраф будет правомерным</strong>.
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
+                        <div className="p-3.5 sm:p-4 rounded-2xl bg-white border border-[#E8EBE8] shadow-sm">
+                          <div className="text-[10.5px] sm:text-[11px] font-extrabold uppercase text-[#5B8E52] mb-0.5 sm:mb-1">Должностные лица</div>
+                          <div className="text-xl sm:text-2xl font-black text-[#61403A] mb-1">500 ₽</div>
+                          <p className="text-xs text-[#657080] leading-snug">Механик или директор за выпуск авто без ТО (ч. 1 ст. 12.31 КоАП).</p>
+                        </div>
+
+                        <div className="p-3.5 sm:p-4 rounded-2xl bg-white border border-[#E8EBE8] shadow-sm">
+                          <div className="text-[10.5px] sm:text-[11px] font-extrabold uppercase text-[#5B8E52] mb-0.5 sm:mb-1">Водитель ТС (когда ТО нужен)</div>
+                          <div className="text-xl sm:text-2xl font-black text-[#61403A] mb-1">2 000 ₽</div>
+                          <p className="text-xs text-[#657080] leading-snug">При отсутствии диагностической карты (ст. 12.5 КоАП РФ).</p>
+                        </div>
+
+                        <div className="p-3.5 sm:p-4 rounded-2xl bg-[#61403A] text-white shadow-sm">
+                          <div className="text-[10.5px] sm:text-[11px] font-extrabold uppercase text-[#8BBA82] mb-0.5 sm:mb-1">Юрлица и ИП</div>
+                          <div className="text-xl sm:text-2xl font-black text-white mb-1">50 000 ₽</div>
+                          <p className="text-xs text-white/80 leading-snug">ИП несут ответственность наравне с юрлицами (ч. 1 ст. 12.31 КоАП).</p>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="p-4 sm:p-5 rounded-2xl bg-white border-2 border-red-400/60 shadow-sm space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-1.5">
+                        <span className="font-extrabold text-[#61403A] text-[15px] sm:text-base">
+                          ДТП без диагностической карты — регресс по ОСАГО
+                        </span>
+                        <span className="px-2.5 py-0.5 rounded-lg bg-red-50 text-red-600 text-[11px] font-extrabold">
+                          ст. 14 ФЗ-40
+                        </span>
+                      </div>
+
+                      <p className="text-[13px] sm:text-[14.5px] text-[#151C2B]/90 leading-relaxed">
+                        Когда виновником аварии оказывается водитель машины без действующей диагностической карты (владелец такси, автобуса, грузового автомобиля, спецтранспорта и др., пропустивший обязательный по закону техосмотр), пострадавший всё равно получает выплату по ОСАГО.{" "}
+                        <strong className="text-[#61403A]">
+                          А страховая компания потребует вернуть выплаченные пострадавшему деньги (регресс).
+                        </strong>
+                      </p>
+
+                      <div className="pt-2 border-t border-[#E8EBE8] space-y-1 text-[11.5px] sm:text-xs text-[#657080] font-medium">
+                        <div>• ФЗ от 25.04.2002 № 40-ФЗ «Об обязательном страховании гражданской ответственности владельцев транспортных средств», статья 14.</div>
+                        <div>• Письмо Банка России № ИН 018-53/9 от 10.02.2022 о регрессе по ОСАГО (Центральный банк России).</div>
+                      </div>
                     </div>
-                    <div className="p-3.5 sm:p-4 rounded-2xl bg-white border border-[#E8EBE8] shadow-sm">
-                      <div className="text-[10.5px] sm:text-[11px] font-extrabold uppercase text-[#8BBA82] mb-0.5 sm:mb-1">Физлица (когда ТО нужен)</div>
-                      <div className="text-xl sm:text-2xl font-black text-[#61403A] mb-1">2 000 ₽</div>
-                      <p className="text-xs text-[#657080] leading-snug">При отсутствии диагностической карты (ст. 12.5 КоАП РФ).</p>
-                    </div>
-                    <div className="p-3.5 sm:p-4 rounded-2xl bg-[#61403A] text-white shadow-sm">
-                      <div className="text-[10.5px] sm:text-[11px] font-extrabold uppercase text-[#8BBA82] mb-0.5 sm:mb-1">Юрлица и ИП</div>
-                      <div className="text-xl sm:text-2xl font-black text-white mb-1">50 000 ₽</div>
-                      <p className="text-xs text-white/80 leading-snug">ИП несут ответственность наравне с юрлицами (ч. 1 ст. 12.31 КоАП).</p>
-                    </div>
-                  </div>
+                  )}
                 </>
               )}
 
@@ -1777,7 +1757,7 @@ const [today, setToday] = useState<Date | null>(null);
                       </div>
                       <div className="font-extrabold text-[#61403A] mb-1">Нечитаемый номер</div>
                       <p className="text-xs sm:text-sm text-[#657080] leading-snug">
-                        Если краска сошла естественным путём, после ДТП или трения о сугроб, но все символы остаются узнаваемыми — предупреждение или штраф <strong>500 ₽</strong>.
+                        Если краска сошла естественным путём, после ДТП или трения о сугроб, но все символы остаются узнаваемыми — предупреждение или штраф водителю ТС <strong>500 ₽</strong>.
                       </p>
                     </div>
 
@@ -1787,7 +1767,7 @@ const [today, setToday] = useState<Date | null>(null);
                       </div>
                       <div className="font-extrabold text-white mb-1">Видоизменённый знак</div>
                       <p className="text-xs sm:text-sm text-white/85 leading-snug">
-                        Если потёртый символ напоминает другой (например, <strong>«О»</strong> стала как <strong>«С»</strong>, или <strong>«Х»</strong> как <strong>«У»</strong>) — штраф <strong>5 000 ₽</strong> или <strong>лишение прав на 1–3 месяца</strong>.
+                        Если потёртый символ напоминает другой (например, <strong>«О»</strong> стала как <strong>«С»</strong>, или <strong>«Х»</strong> как <strong>«У»</strong>) — штраф водителю ТС <strong>5 000 ₽</strong> или <strong>лишение прав на 1–3 месяца</strong>.
                       </p>
                     </div>
                   </div>
@@ -1797,21 +1777,22 @@ const [today, setToday] = useState<Date | null>(null);
               {activeDrawer === 'tuning' && (
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="p-3.5 sm:p-4 rounded-2xl bg-white border border-[#E8EBE8] shadow-sm">
-                      <div className="inline-block px-2.5 py-0.5 rounded-lg bg-[#EEF3ED] text-[#8BBA82] text-[11px] sm:text-xs font-extrabold mb-1.5">
-                        1. Предписание • 10 дней
+                    {/* Предписание до 10 дней — белый фон + красный акцент */}
+                    <div className="p-3.5 sm:p-4 rounded-2xl bg-white text-[#151C2B] shadow-sm border-2 border-red-400/70">
+                      <div className="inline-block px-2.5 py-0.5 rounded-lg bg-red-50 text-red-600 text-[11px] sm:text-xs font-extrabold mb-1.5">
+                        1. Предписание • до 10 дней
                       </div>
-                      <p className="text-xs sm:text-sm text-[#657080] leading-snug">
-                        За незарегистрированные в ПТС/СТС изменения — штраф <strong>500 ₽</strong> (ч. 1 ст. 12.5 КоАП) и <strong>10 дней</strong> на демонтаж или официальное оформление через экспертизу и ГАИ.
+                      <p className="text-xs sm:text-sm text-[#151C2B]/90 leading-snug">
+                        За незарегистрированные в ПТС/СТС изменения — штраф водителю ТС <strong className="text-[#61403A]">500 ₽</strong> (ч. 1 ст. 12.5 КоАП) и <strong className="text-red-600">до 10 дней</strong> на демонтаж или официальное оформление через экспертизу и ГАИ.
                       </p>
                     </div>
 
-                    <div className="p-3.5 sm:p-4 rounded-2xl bg-[#61403A] text-white shadow-sm">
+                    <div className="p-3.5 sm:p-4 rounded-2xl bg-[#61403A] text-white shadow-sm border border-red-400/30">
                       <div className="inline-block px-2.5 py-0.5 rounded-lg bg-red-500/20 text-red-200 text-[11px] sm:text-xs font-extrabold mb-1.5">
                         2. Прекращение регистрации
                       </div>
                       <p className="text-xs sm:text-sm text-white/85 leading-snug">
-                        При игнорировании предписания ГАИ аннулирует учёт. Езда на таком авто (ст. 12.1 КоАП): штраф <strong>500–800 ₽</strong>, повторно — <strong>5 000 ₽</strong> или лишение прав <strong>до 3 мес.</strong>
+                        При игнорировании предписания ГАИ аннулирует учёт. Езда на таком авто (ст. 12.1 КоАП): штраф водителю ТС <strong>500–800 ₽</strong>, повторно — <strong>5 000 ₽</strong> или лишение прав <strong>до 3 мес.</strong>
                       </p>
                     </div>
                   </div>
@@ -1835,21 +1816,26 @@ const [today, setToday] = useState<Date | null>(null);
               )}
             </div>
 
-            {/* Нижняя панель действий: на мобильных кнопки идут в столбик во всю ширину */}
-            <div className="px-4 py-3.5 sm:px-7 sm:py-5 bg-white border-t border-[#E8EBE8] shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
-              <a
-                href="#booking"
-                onClick={() => setActiveDrawer(null)}
-                className="w-full sm:flex-1 bg-[#8BBA82] hover:bg-[#77a66f] text-white font-extrabold py-3 sm:py-3.5 px-5 sm:px-6 rounded-full text-center text-[13.5px] sm:text-base transition-all shadow-md hover:-translate-y-0.5"
-              >
-                Записаться на визит
-              </a>
-              <a
-                href="tel:+79882556547"
-                className="w-full sm:w-auto px-5 sm:px-6 py-3 sm:py-3.5 rounded-full bg-[#F8F9F7] hover:bg-[#EEF3ED] border border-[#E8EBE8] text-[#61403A] font-extrabold text-center text-[13.5px] sm:text-base transition-colors whitespace-nowrap"
-              >
-                +7 (988) 255-65-47
-              </a>
+            {/* Нижняя панель действий с увеличенной единой подписью */}
+            <div className="px-4 py-4 sm:px-7 sm:py-5 bg-white border-t border-[#E8EBE8] shrink-0 space-y-3">
+              <p className="text-center text-[13.5px] sm:text-[15px] font-bold text-[#61403A] leading-snug">
+                Ждём в любое удобное для вас время — или можете записаться заранее.
+              </p>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+                <a
+                  href="#booking"
+                  onClick={() => setActiveDrawer(null)}
+                  className="w-full sm:flex-1 bg-[#8BBA82] hover:bg-[#77a66f] text-white font-extrabold py-3.5 px-5 sm:px-6 rounded-full text-center text-[14px] sm:text-base transition-all shadow-md hover:-translate-y-0.5"
+                >
+                  Записаться на визит
+                </a>
+                <a
+                  href="tel:+79882556547"
+                  className="w-full sm:w-auto px-5 sm:px-6 py-3.5 rounded-full bg-[#F8F9F7] hover:bg-[#EEF3ED] border border-[#E8EBE8] text-[#61403A] font-extrabold text-center text-[14px] sm:text-base transition-colors whitespace-nowrap"
+                >
+                  +7 (988) 255-65-47
+                </a>
+              </div>
             </div>
           </motion.div>
         </div>
