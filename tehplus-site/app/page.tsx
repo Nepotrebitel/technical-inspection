@@ -73,6 +73,10 @@ export default function Home() {
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
   const [cameraModalTab, setCameraModalTab] = useState<'fines' | 'regress'>('fines');
   const [openService, setOpenService] = useState<number | null>(null);
+
+  const [consentAccepted, setConsentAccepted] = useState(false);
+  const [honeypot, setHoneypot] = useState('');
+  const [formOpenedAt, setFormOpenedAt] = useState<number>(0);
   const [isTuningOpen, setIsTuningOpen] = useState(false);
   const [isRegressOpen, setIsRegressOpen] = useState(false);
 
@@ -104,7 +108,12 @@ export default function Home() {
     "Перепланировка салона",
   ];
 
-  const [today, setToday] = useState<Date | null>(null);
+const [today, setToday] = useState<Date | null>(null);
+
+  useEffect(() => {
+    setToday(new Date());
+    setFormOpenedAt(Date.now());
+  }, []);
 
   const quickDates = useMemo(() => {
     if (!today) {
@@ -269,6 +278,11 @@ export default function Home() {
       return;
     }
 
+    if (!consentAccepted) {
+      setStatus({ type: 'error', text: 'Пожалуйста, подтвердите согласие на обработку персональных данных.' });
+      return;
+    }
+
     if (!availableSlots.some((s) => s.time === formData.time && !s.isBooked)) {
       setStatus({ type: 'error', text: 'Выбранное время уже недоступно. Пожалуйста, выберите другой слот.' });
       setFormData((prev) => ({ ...prev, time: '' }));
@@ -311,25 +325,30 @@ export default function Home() {
     setStatus({ type: 'loading', text: 'Отправка заявки...' });
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/leads`, {
+          const response = await fetch(`${API_BASE_URL}/api/leads`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
         body: JSON.stringify({
-          carNumber: cleanedNumber,
+          carNumber: cleanedNumber || null,
           phone: normalizedPhone,
           category: 'M1 Легковые автомобили',
           date: formattedDate,
           time: formData.time,
+          consentAccepted,
+          website: honeypot,
+          formFillTimeMs: formOpenedAt ? Date.now() - formOpenedAt : 5000,
         }),
       });
 
       if (response.ok) {
         setStatus({ type: 'success', text: 'Заявка успешно отправлена! Талон активирован — ждём вас.' });
         setBookedSlots((prev) => [...prev, formData.time]);
-        setFormData((prev) => ({ carNumber: '', phone: '', date: prev.date, time: '' }));
+        setFormData((prev) => ({ carNumber: '', phone: '', category: prev.category, date: prev.date, time: '' }));
+        setConsentAccepted(false);
+        setFormOpenedAt(Date.now());
       } else if (response.status === 409) {
         setStatus({ type: 'error', text: 'Выбранное время уже занято. Пожалуйста, выберите другой слот.' });
         setBookedSlots((prev) => [...prev, formData.time]);
@@ -1389,17 +1408,56 @@ export default function Home() {
                     )}
                   </div>
 
-                  <div className="pt-2">
+                 <div className="pt-2 space-y-3.5">
+                    {/* Скрытое поле-ловушка (Honeypot) от спам-ботов: человек его не видит, а бот заполняет */}
+                    <input
+                      type="text"
+                      name="website"
+                      tabIndex={-1}
+                      autoComplete="off"
+                      value={honeypot}
+                      onChange={(e) => setHoneypot(e.target.value)}
+                      className="hidden"
+                      aria-hidden="true"
+                    />
+
+                    {/* Обязательный чекбокс согласия на обработку ПДн по 152-ФЗ */}
+                    <label className="flex items-start gap-3 cursor-pointer select-none text-left">
+                      <input
+                        type="checkbox"
+                        checked={consentAccepted}
+                        onChange={(e) => setConsentAccepted(e.target.checked)}
+                        className="mt-0.5 w-4 h-4 rounded border-white/30 accent-[#8BBA82] shrink-0 cursor-pointer"
+                      />
+                      <span className="text-xs text-white/75 leading-snug">
+                        Я даю согласие ООО «ТЕХПЛЮС» на обработку персональных данных (телефон, госномер авто) для записи на техосмотр в соответствии с{" "}
+                        <a
+                          href="/privacy"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline text-[#8BBA82] hover:text-white transition-colors"
+                        >
+                          Политикой конфиденциальности
+                        </a>.
+                      </span>
+                    </label>
+
                     <button
                       type="submit"
-                      disabled={!formData.time || isSubmitting}
-                      className={`w-full font-bold py-4 sm:py-5 rounded-[16px] sm:rounded-[20px] transition-all shadow-lg text-[15px] sm:text-[17px] ${
-                        formData.time && !isSubmitting
+                      disabled={!formData.time || !consentAccepted || isSubmitting}
+                      className={`w-full font-bold py-4 sm:py-5 rounded-[16px] sm:rounded-[20px] transition-all shadow-lg text-[16px] sm:text-[17px] ${
+                        formData.time && consentAccepted && !isSubmitting
                           ? 'bg-[#8BBA82] hover:bg-[#77a66f] text-white shadow-[#8BBA82]/30 hover:-translate-y-1 cursor-pointer'
                           : 'bg-white/10 text-white/40 cursor-not-allowed shadow-none'
                       }`}
                     >
-                      {isSubmitting ? 'Отправляем заявку...' : formData.time ? `Забронировать на ${formData.time}` : 'Выберите дату и время'}
+                      {isSubmitting
+                        ? 'Отправляем заявку...'
+                        : !formData.time
+                        ? 'Выберите дату и время'
+                        : !consentAccepted
+                        ? 'Подтвердите согласие выше'
+                        : `Забронировать на ${formData.time}`}
                     </button>
 
                     {status.text && (
@@ -1527,7 +1585,7 @@ export default function Home() {
           </div>
           <div className="md:text-right space-y-1.5 sm:space-y-2 border-t border-[#E8EBE8] w-full md:w-auto pt-5 sm:pt-6 md:border-none md:pt-0">
             <p>© Copyright 2026 • <a href="https://техосмотр-на-доватора.рф" className="hover:text-[#8BBA82] transition-colors underline decoration-[#E8EBE8] underline-offset-4 break-all">техосмотр-на-доватора.рф</a></p>
-            <p><a href="#contacts" className="hover:text-[#8BBA82] transition-colors underline decoration-[#E8EBE8] underline-offset-4">Политика конфиденциальности</a></p>
+            <p><a href="/privacy" className="hover:text-[#8BBA82] transition-colors underline decoration-[#E8EBE8] underline-offset-4">Политика конфиденциальности</a></p>
           </div>
         </div>
       </motion.footer>

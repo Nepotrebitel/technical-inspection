@@ -1,64 +1,85 @@
-import os
-from fastapi import FastAPI, HTTPException
+import time
+from collections import defaultdict
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
-import httpx
-from dotenv import load_dotenv
+from fastapi.responses import JSONResponse
 
-load_dotenv()
+from app.config import settings
+from app.database import Base, engine
+from app.routers import admin, bookings
 
-app = FastAPI(title="API Техплюс")
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield
+
+
+app = FastAPI(
+    title="ТЕХПЛЮС API (Пункт техосмотра РСА № 16412)",
+    version="1.0.0",
+    lifespan=lifespan,
+    docs_url="/docs" if settings.app_env == "development" else None,
+    redoc_url=None,
+)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], 
+    allow_origins=settings.cors_origins_list,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Accept", "X-Admin-Key"],
 )
 
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+_rate_limit_minute: dict[str, list[float]] = defaultdict(list)
+_rate_limit_hour: dict[str, list[float]] = defaultdict(list)
 
-# ОБНОВЛЕННАЯ СТРУКТУРА ДАННЫХ (Под новую форму)
-class LeadRequest(BaseModel):
-    carNumber: str = Field(...)
-    phone: str = Field(...)
-    category: str = Field(...)
-    date: str = Field(...)
-    time: str = Field(...)
 
-@app.get("/api/health")
-async def health_check():
-    return {"status": "ok", "message": "Backend is running"}
+@app.middleware("http")
+async def security_and_rate_limit_middleware(request: Request, call_next):
+    # 1. Защита от переполнения памяти большими телами запросов (макс. 8 КБ)
+    content_length = request.headers.get("content-length")
+    if content_length and int(content_length) > 8192:
+        return JSONResponse(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            content={"detail": "Слишком большой размер запроса."},
+        )
 
-@app.post("/api/leads")
-async def create_lead(lead: LeadRequest):
-    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
-        raise HTTPException(status_code=500, detail="Telegram credentials not configured")
+    # 2. Антиспам лимиты (5 запросов в минуту, 15 в час с одного IP) на создание заявок
+    if request.method == "POST" and request.url.path == "/api/leads":
+        forwarded = request.headers.get("X-Forwarded-For")
+        ip = forwarded.split(",")[0].strip() if forwarded else (request.client.host if request.client else "unknown")
+        now = time.monotonic()
 
-    # ОБНОВЛЕННЫЙ ТЕКСТ СООБЩЕНИЯ
-    message_text = (
-        f"🔔 <b>Новая бронь на линию ТО!</b>\n\n"
-        f"🚘 <b>Госномер:</b> {lead.carNumber.upper()}\n"
-        f"📞 <b>Телефон:</b> {lead.phone}\n"
-        f"📋 <b>Категория:</b> {lead.category}\n\n"
-        f"🗓 <b>Дата:</b> {lead.date}\n"
-        f"⏰ <b>Время:</b> {lead.time}"
-    )
+        min_hits = [t for t in _rate_limit_minute[ip] if now - t < 60]
+        hour_hits = [t for t in _rate_limit_hour[ip] if now - t < 3600]
 
-    telegram_url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    payload = {
-        "chat_id": TELEGRAM_CHAT_ID,
-        "text": message_text,
-        "parse_mode": "HTML"
-    }
+        if len(min_hits) >= 5 or len(hour_hits) >= 15:
+            return JSONResponse(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                content={"detail": "Слишком много заявок с вашего IP. Повторите попытку позже."},
+            )
 
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.post(telegram_url, json=payload)
-            response.raise_for_status()
-        except Exception:
-            raise HTTPException(status_code=500, detail="Failed to send message")
+        min_hits.append(now)
+        hour_hits.append(now)
+        _rate_limit_minute[ip] = min_hits
+        _rate_limit_hour[ip] = hour_hits
 
-    return {"status": "success", "message": "Заявка отправлена"}
+    response = await call_next(request)
+
+    # 3. Заголовки безопасности браузера
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
+
+
+@app.get("/api/health", tags=["System"])
+async def health_check() -> dict[str, str]:
+    return {"status": "ok", "service": "tehplus-backend"}
+
+
+app.include_router(bookings.router)
+app.include_router(admin.router)
