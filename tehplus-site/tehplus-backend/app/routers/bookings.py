@@ -1,3 +1,4 @@
+import hashlib
 from datetime import date, datetime, timezone
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func, select, text
@@ -5,11 +6,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.database import get_db
-from app.models import Booking
+from app.models import BlockedSlot, Booking, SystemLog
 from app.notifications import notify_new_booking
 from app.schemas import LeadCreate, LeadResponse, SlotsResponse
 
 router = APIRouter(prefix="/api", tags=["Bookings"])
+
+# Активные статусы, которые занимают место на линии
+OCCUPYING_STATUSES = ("confirmed", "completed", "no_show")
 
 
 def _extract_client_ip(request: Request) -> str | None:
@@ -32,20 +36,25 @@ async def get_booked_slots(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail="Некорректный формат даты.") from exc
 
+    # 1. Считаем занятые места по активным записям
     stmt = (
         select(Booking.booking_time, func.count(Booking.id))
-        .where(Booking.booking_date == date_str, Booking.status == "confirmed")
+        .where(Booking.booking_date == date_str, Booking.status.in_(OCCUPYING_STATUSES))
         .group_by(Booking.booking_time)
     )
     result = await db.execute(stmt)
     counts = {row[0]: int(row[1]) for row in result.all()}
 
-    # Слот считается полностью занятым для фронтенда, только когда набралось max_bookings_per_slot (2 человека)
-    fully_booked = sorted([t for t, cnt in counts.items() if cnt >= settings.max_bookings_per_slot])
+    # 2. Получаем слоты, вручную закрытые администратором (обед, поверка, спецзаказ)
+    blocked_stmt = select(BlockedSlot.block_time).where(BlockedSlot.block_date == date_str)
+    blocked_times = set((await db.execute(blocked_stmt)).scalars().all())
+
+    fully_booked_set = {t for t, cnt in counts.items() if cnt >= settings.max_bookings_per_slot}
+    fully_booked_set.update(blocked_times)
 
     return SlotsResponse(
         date=date_str,
-        bookedSlots=fully_booked,
+        bookedSlots=sorted(fully_booked_set),
         slotCounts=counts,
         maxPerSlot=settings.max_bookings_per_slot,
     )
@@ -58,35 +67,85 @@ async def create_lead(
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ) -> LeadResponse:
-    # 1. Тихая отсечка ботов по honeypot-полю и скорости заполнения (< 1.5 сек)
+    client_ip = _extract_client_ip(request)
+
+    # 1. Антибот-фильтр (Honeypot + скорость заполнения)
     if (payload.website and payload.website.strip()) or (
         payload.formFillTimeMs is not None and payload.formFillTimeMs < 1500
     ):
+        reason = "Honeypot заполнен" if payload.website else f"Слишком быстрая отправка ({payload.formFillTimeMs} мс)"
+        db.add(
+            SystemLog(
+                level="SECURITY",
+                source="security",
+                message="Заблокирована спам-попытка отправки формы",
+                details=reason,
+                url_path="/api/leads",
+                client_ip=client_ip,
+            )
+        )
+        await db.commit()
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ошибка проверки безопасности формы.")
 
-    # 2. Блокировка на уровне транзакции БД (защита от одновременного клика 3-го человека)
+    # 2. Атомарная блокировка слота
     if settings.database_url.startswith("sqlite"):
         await db.execute(text("BEGIN IMMEDIATE"))
+    elif settings.database_url.startswith("postgresql"):
+        lock_key = int.from_bytes(
+            hashlib.sha256(f"{payload.date}:{payload.time}".encode()).digest()[:8],
+            "big",
+            signed=True,
+        )
+        await db.execute(text("SELECT pg_advisory_xact_lock(:key)"), {"key": lock_key})
 
-    # 3. Защита от спама с одного номера телефона (максимум 2 активные записи на один день)
-    phone_count_stmt = select(func.count(Booking.id)).where(
+    # 3. Проверка, не закрыт ли слот администратором
+    is_blocked = (
+        await db.execute(
+            select(BlockedSlot.id).where(
+                BlockedSlot.block_date == payload.date,
+                BlockedSlot.block_time == payload.time,
+            )
+        )
+    ).scalar_one_or_none()
+    if is_blocked is not None:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Выбранное время недоступно для записи. Пожалуйста, выберите другой слот.",
+        )
+
+    # 4. Лимит на один госномер (макс. 2 записи в день)
+    car_count_stmt = select(func.count(Booking.id)).where(
         Booking.booking_date == payload.date,
-        Booking.phone == payload.phone,
-        Booking.status == "confirmed",
+        Booking.car_number == payload.carNumber,
+        Booking.status.in_(OCCUPYING_STATUSES),
     )
-    phone_bookings_today = (await db.execute(phone_count_stmt)).scalar_one()
-    if phone_bookings_today >= 2:
+    if (await db.execute(car_count_stmt)).scalar_one() >= 2:
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="На этот номер телефона уже оформлено максимальное количество записей на выбранный день.",
+            detail="На этот автомобиль уже оформлено максимальное количество записей на выбранный день.",
         )
 
-    # 4. Проверяем, сколько человек уже записано на это окно (разрешаем до 2 человек)
+    # 5. Лимит на один телефон (если указан)
+    if payload.phone:
+        phone_count_stmt = select(func.count(Booking.id)).where(
+            Booking.booking_date == payload.date,
+            Booking.phone == payload.phone,
+            Booking.status.in_(OCCUPYING_STATUSES),
+        )
+        if (await db.execute(phone_count_stmt)).scalar_one() >= 2:
+            await db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="На этот номер телефона уже оформлено максимальное количество записей на выбранный день.",
+            )
+
+    # 6. Проверка вместимости слота (до 2 автомобилей)
     slot_count_stmt = select(func.count(Booking.id)).where(
         Booking.booking_date == payload.date,
         Booking.booking_time == payload.time,
-        Booking.status == "confirmed",
+        Booking.status.in_(OCCUPYING_STATUSES),
     )
     current_count = (await db.execute(slot_count_stmt)).scalar_one()
 
@@ -105,9 +164,11 @@ async def create_lead(
         booking_date=payload.date,
         booking_time=payload.time,
         status="confirmed",
+        source="online",
+        utm_source=payload.utmSource,
         consent_accepted=payload.consentAccepted,
         consent_timestamp=now_utc,
-        client_ip=_extract_client_ip(request),
+        client_ip=client_ip,
         created_at=now_utc,
     )
 
@@ -120,10 +181,10 @@ async def create_lead(
         booking_id=new_booking.id,
         booking_date=new_booking.booking_date,
         booking_time=new_booking.booking_time,
-        category=new_booking.category,
-        phone=new_booking.phone,
         car_number=new_booking.car_number,
+        phone=new_booking.phone,
         slot_occupancy=current_count + 1,
+        source="online",
     )
 
     return LeadResponse(
@@ -131,7 +192,7 @@ async def create_lead(
         status=new_booking.status,
         date=new_booking.booking_date,
         time=new_booking.booking_time,
-        category=new_booking.category,
         carNumber=new_booking.car_number,
+        phone=new_booking.phone,
         message="Заявка успешно создана",
     )

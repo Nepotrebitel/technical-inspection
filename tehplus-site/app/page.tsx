@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { Manrope, Playfair_Display } from 'next/font/google';
+import { trackUserAction } from "@/components/SiteAnalytics";
 
 import DatePicker, { registerLocale } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -73,7 +74,7 @@ export default function Home() {
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
   const [cameraModalTab, setCameraModalTab] = useState<'fines' | 'regress'>('fines');
   const [openService, setOpenService] = useState<number | null>(null);
-
+  
   const [consentAccepted, setConsentAccepted] = useState(false);
   const [honeypot, setHoneypot] = useState('');
   const [formOpenedAt, setFormOpenedAt] = useState<number>(0);
@@ -233,10 +234,14 @@ const [today, setToday] = useState<Date | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    if (name === "carNumber" && !formData.carNumber && value.trim().length > 0) {
+  trackUserAction("form_start");
+  }
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSelectDate = (date: Date | null) => {
+    if (date) trackUserAction("booking_date_selected");
     setFormData((prev) => ({ ...prev, date, time: '' }));
   };
 
@@ -346,7 +351,7 @@ const [today, setToday] = useState<Date | null>(null);
       if (response.ok) {
         setStatus({ type: 'success', text: 'Заявка успешно отправлена! Талон активирован — ждём вас.' });
         setBookedSlots((prev) => [...prev, formData.time]);
-        setFormData((prev) => ({ carNumber: '', phone: '', category: prev.category, date: prev.date, time: '' }));
+        setFormData((prev) => ({ carNumber: '', phone: '', date: prev.date, time: '' }));
         setConsentAccepted(false);
         setFormOpenedAt(Date.now());
       } else if (response.status === 409) {
@@ -459,7 +464,7 @@ const [today, setToday] = useState<Date | null>(null);
 
             <button
               type="button"
-              onClick={() => setMobileMenuOpen((prev) => !prev)}
+              onClick={() => setMobileMenuOpen((prev) => !prev) }
               aria-label="Открыть меню разделов"
               aria-expanded={mobileMenuOpen}
               className="md:hidden w-10 h-10 rounded-full bg-[#EEF3ED] text-[#61403A] flex items-center justify-center shrink-0 active:scale-95 transition-transform"
@@ -1126,18 +1131,20 @@ const [today, setToday] = useState<Date | null>(null);
             <div className="bg-[#61403A] rounded-[22px] sm:rounded-[32px] p-4 sm:p-7 md:p-10 shadow-xl text-white space-y-3.5">
               <h3 className="font-extrabold text-[18px] sm:text-[24px] text-white">Ответственность и порядок устранения</h3>
 
-              {/* Предписание до 10 дней — белый фон + красный акцент */}
-              <div className="bg-white text-[#151C2B] p-3.5 sm:p-4 rounded-2xl border-2 border-red-400/70 shadow-sm">
-                <div className="inline-block px-2.5 py-0.5 rounded-lg bg-red-50 text-red-600 text-[11px] sm:text-xs font-extrabold uppercase mb-1.5">
+              {/* Предписание до 10 дней — фирменный коричневый фон с красным акцентом */}
+              <div className="bg-white/10 p-3.5 sm:p-4 rounded-2xl border border-red-400/40">
+                <div className="text-[11px] sm:text-xs font-extrabold uppercase text-red-300 mb-1">
                   1. Предписание • до 10 дней (ч. 1 ст. 12.5 КоАП)
                 </div>
-                <p className="text-[13px] sm:text-[14.5px] text-[#151C2B]/90 leading-snug">
-                  За незарегистрированные в ПТС/СТС изменения — штраф водителю ТС <strong className="text-[#61403A]">500 ₽</strong> и <strong className="text-red-600">до 10 дней</strong> на демонтаж или официальное оформление через экспертизу и ГАИ.
+                <p className="text-[13px] sm:text-[14.5px] text-white/95 leading-snug">
+                  За незарегистрированные в ПТС/СТС изменения — штраф водителю ТС <strong>500 ₽</strong> и <strong>до 10 дней</strong> на демонтаж или официальное оформление через экспертизу и ГАИ.
                 </p>
               </div>
 
               <div className="bg-white/10 p-3.5 sm:p-4 rounded-2xl border border-red-400/40">
-                <div className="text-[11px] sm:text-xs font-extrabold uppercase text-red-300 mb-1">2. Прекращение регистрации и лишение прав (ст. 12.1 КоАП)</div>
+                <div className="text-[11px] sm:text-xs font-extrabold uppercase text-red-300 mb-1">
+                  2. Прекращение регистрации и лишение прав (ст. 12.1 КоАП)
+                </div>
                 <p className="text-[13px] sm:text-[14.5px] text-white/95 leading-snug">
                   Если проигнорировать предписание, ГАИ <strong>прекращает регистрацию авто</strong>. За езду на таком авто: первый раз — штраф водителю ТС <strong>500–800 ₽</strong>, повторно — штраф водителю ТС <strong>5 000 ₽</strong> или лишение прав на срок <strong>до 3 месяцев</strong>.
                 </p>
@@ -1383,6 +1390,7 @@ const [today, setToday] = useState<Date | null>(null);
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
+                                    trackUserAction("booking_time_selected", { time });
                                     setFormData((prev) => ({ ...prev, time }));
                                   }}
                                   title={isBooked ? "Это время уже занято" : `Выбрать ${time}`}
