@@ -44,6 +44,14 @@ def verify_admin_key(request: Request, x_admin_key: str = Header(..., alias="X-A
 
     _failed_admin_attempts.pop(ip, None)
 
+def _safe_csv_cell(value: str | None) -> str:
+    if not value:
+        return ""
+    cleaned = str(value).replace("\r", " ").replace("\n", " ").strip()
+    if cleaned.startswith(("=", "+", "-", "@", "\t")):
+        return f"'{cleaned}"
+    return cleaned
+
 
 @router.get("/bookings", response_model=list[AdminBookingItem], dependencies=[Depends(verify_admin_key)])
 async def list_bookings(

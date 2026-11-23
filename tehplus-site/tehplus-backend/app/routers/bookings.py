@@ -1,5 +1,5 @@
 import hashlib
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,6 +24,19 @@ def _extract_client_ip(request: Request) -> str | None:
     if real_ip:
         return real_ip.strip()[:64]
     return request.client.host[:64] if request.client else None
+TRUSTED_PROXIES = {"127.0.0.1", "::1"}
+
+def _get_real_client_ip(request: Request) -> str:
+    direct_ip = request.client.host if request.client else "unknown"
+    if direct_ip in TRUSTED_PROXIES:
+        real_ip = request.headers.get("X-Real-IP")
+        if real_ip:
+            return real_ip.strip()[:64]
+        forwarded = request.headers.get("X-Forwarded-For")
+        if forwarded:
+            # Берём последний IP в цепочке, добавленный нашим Nginx
+            return forwarded.split(",")[-1].strip()[:64]
+    return direct_ip[:64]
 
 
 @router.get("/slots", response_model=SlotsResponse)
@@ -69,7 +82,12 @@ async def create_lead(
 ) -> LeadResponse:
     client_ip = _extract_client_ip(request)
 
-    # 1. Антибот-фильтр (Honeypot + скорость заполнения)
+    # 1. Проверка Origin запроса (отсекает сторонние сайты и прямые запросы с чужих доменов)
+    origin = request.headers.get("Origin")
+    if origin and origin not in settings.cors_origins_list:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Недопустимый источник запроса.")
+
+    # 2. Антибот-фильтр (Honeypot + скорость заполнения) — до обращения к БД
     if (payload.website and payload.website.strip()) or (
         payload.formFillTimeMs is not None and payload.formFillTimeMs < 1500
     ):
@@ -87,6 +105,19 @@ async def create_lead(
         await db.commit()
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ошибка проверки безопасности формы.")
 
+    # 3. Не более 3 активных записей за сутки с одного IP-адреса
+    if client_ip and client_ip != "unknown":
+        since_24h = datetime.now(timezone.utc) - timedelta(hours=24)
+        ip_daily_stmt = select(func.count(Booking.id)).where(
+            Booking.client_ip == client_ip,
+            Booking.created_at >= since_24h,
+            Booking.status.in_(OCCUPYING_STATUSES),
+        )
+        if (await db.execute(ip_daily_stmt)).scalar_one() >= 3:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Превышен суточный лимит записей с вашего устройства.",
+            )
     # 2. Атомарная блокировка слота
     if settings.database_url.startswith("sqlite"):
         await db.execute(text("BEGIN IMMEDIATE"))

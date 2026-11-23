@@ -40,11 +40,25 @@ _leads_hour_hits: dict[str, list[float]] = defaultdict(list)
 _analytics_min_hits: dict[str, list[float]] = defaultdict(list)
 
 
-def _get_ip(request: Request) -> str:
-    forwarded = request.headers.get("X-Forwarded-For")
-    if forwarded:
-        return forwarded.split(",")[0].strip()[:64]
-    return request.client.host[:64] if request.client else "unknown"
+TRUSTED_PROXIES = {"127.0.0.1", "::1"}
+
+def _get_real_client_ip(request: Request) -> str:
+    direct_ip = request.client.host if request.client else "unknown"
+    if direct_ip in TRUSTED_PROXIES:
+        real_ip = request.headers.get("X-Real-IP")
+        if real_ip:
+            return real_ip.strip()[:64]
+        forwarded = request.headers.get("X-Forwarded-For")
+        if forwarded:
+            # Берём последний IP в цепочке, добавленный нашим Nginx
+            return forwarded.split(",")[-1].strip()[:64]
+    return direct_ip[:64]
+
+def _prune_ip_dict(storage: dict[str, list[float]], now: float, ttl: int) -> None:
+    if len(storage) > 5000:
+        expired_keys = [ip for ip, times in storage.items() if not times or (now - times[-1] > ttl)]
+        for ip in expired_keys:
+            storage.pop(ip, None)
 
 
 @app.middleware("http")
@@ -77,13 +91,13 @@ async def security_and_rate_limit_middleware(request: Request, call_next):
         _leads_hour_hits[ip] = hour_hits
 
     # 3. Защита трекера аналитики от флуда (не более 30 пакетов в минуту с IP)
-    elif request.method == "POST" and request.url.path == "/api/analytics/track":
-        ip = _get_ip(request)
-        hits = [t for t in _analytics_min_hits[ip] if now - t < 60]
-        if len(hits) >= 30:
-            return JSONResponse(status_code=status.HTTP_429_TOO_MANY_REQUESTS, content={"detail": "Too many events"})
+    elif request.method == "POST" and request.url.path == "/api/analytics/client-error":
+        ip = _get_real_client_ip(request)
+        hits = [t for t in _analytics_min_hits[f"err:{ip}"] if now - t < 60]
+        if len(hits) >= 10:
+            return JSONResponse(status_code=status.HTTP_429_TOO_MANY_REQUESTS, content={"detail": "Rate limit exceeded"})
         hits.append(now)
-        _analytics_min_hits[ip] = hits
+        _analytics_min_hits[f"err:{ip}"] = hits
 
     response = await call_next(request)
 
