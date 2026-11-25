@@ -1,4 +1,3 @@
-import csv
 import io
 import secrets
 import time
@@ -6,6 +5,8 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
+from openpyxl import Workbook
+from openpyxl.styles import Font
 from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,6 +15,7 @@ from app.config import settings
 from app.database import get_db
 from app.models import BlockedSlot, Booking, SystemLog
 from app.notifications import notify_new_booking, send_test_notifications
+from app.routers.bookings import _get_real_client_ip
 from app.schemas import AdminBookingItem, AdminManualBookingCreate, BOOKING_STATUS, BlockedSlotCreate
 
 router = APIRouter(prefix="/api/admin", tags=["Admin"])
@@ -24,8 +26,14 @@ ADMIN_BAN_SECONDS = 900
 
 
 def verify_admin_key(request: Request, x_admin_key: str = Header(..., alias="X-Admin-Key")) -> None:
-    ip = request.client.host if request.client else "unknown"
+    ip = _get_real_client_ip(request)
     now = time.monotonic()
+
+    if len(_failed_admin_attempts) > 2000:
+        expired = [k for k, v in _failed_admin_attempts.items() if not v or (now - v[-1] > ADMIN_BAN_SECONDS)]
+        for k in expired:
+            _failed_admin_attempts.pop(k, None)
+
     fails = [t for t in _failed_admin_attempts[ip] if now - t < ADMIN_BAN_SECONDS]
     _failed_admin_attempts[ip] = fails
 
@@ -35,7 +43,7 @@ def verify_admin_key(request: Request, x_admin_key: str = Header(..., alias="X-A
             detail="Слишком много неверных попыток входа. Доступ заблокирован на 15 минут.",
         )
 
-    if not secrets.compare_digest(x_admin_key, settings.admin_api_key):
+    if not x_admin_key or len(x_admin_key) > 256 or not secrets.compare_digest(x_admin_key, settings.admin_api_key):
         _failed_admin_attempts[ip].append(now)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -43,6 +51,7 @@ def verify_admin_key(request: Request, x_admin_key: str = Header(..., alias="X-A
         )
 
     _failed_admin_attempts.pop(ip, None)
+
 
 def _safe_csv_cell(value: str | None) -> str:
     if not value:
@@ -190,7 +199,6 @@ async def delete_booking_pdn(
     return {"id": booking_id, "message": "Персональные данные и запись удалены."}
 
 
-# --- Управление блокировкой слотов ---
 @router.get("/blocked-slots", dependencies=[Depends(verify_admin_key)])
 async def list_blocked_slots(
     date_str: str | None = Query(default=None, alias="date", pattern=r"^\d{4}-\d{2}-\d{2}$"),
@@ -229,7 +237,6 @@ async def unblock_slot(slot_id: int, db: AsyncSession = Depends(get_db)) -> dict
     return {"message": "Слот снова открыт для записи."}
 
 
-# --- Диагностика уведомлений и статистика безопасности ---
 @router.post("/test-notifications", dependencies=[Depends(verify_admin_key)])
 async def trigger_test_notifications() -> dict:
     return await send_test_notifications()
@@ -249,48 +256,96 @@ async def get_security_stats(db: AsyncSession = Depends(get_db)) -> dict:
     return {"blockedAttacks24h": int(blocked_24h or 0)}
 
 
-# --- Экспорт записей в CSV (для Excel) ---
+STATUS_LABELS: dict[str, str] = {
+    "pending": "Ожидается",
+    "confirmed": "Подтверждена",
+    "completed": "Пройден",
+    "no_show": "Не приехал",
+    "cancelled": "Отменена",
+}
+
+SOURCE_LABELS: dict[str, str] = {
+    "online": "Сайт",
+    "site": "Сайт",
+    "web": "Сайт",
+    "phone": "По телефону",
+    "manual": "Ручная запись",
+}
+
+
 @router.get("/export-csv", dependencies=[Depends(verify_admin_key)])
-async def export_bookings_csv(
-    date_str: str | None = Query(default=None, alias="date", pattern=r"^\d{4}-\d{2}-\d{2}$"),
+async def export_bookings_xlsx(
+    date_filter: str | None = Query(default=None, alias="date", pattern=r"^\d{4}-\d{2}-\d{2}$"),
     db: AsyncSession = Depends(get_db),
-):
+) -> StreamingResponse:
     stmt = select(Booking).order_by(Booking.booking_date.desc(), Booking.booking_time.asc())
-    if date_str:
-        stmt = stmt.where(Booking.booking_date == date_str)
-    rows = (await db.execute(stmt)).scalars().all()
+    if date_filter:
+        stmt = stmt.where(Booking.booking_date == date_filter)
 
-    output = io.StringIO()
-    # BOM для корректного открытия кириллицы в русском Microsoft Excel
-    output.write("\ufeff")
-    writer = csv.writer(output, delimiter=";")
-    writer.writerow(["ID", "Дата", "Время", "Госномер", "Телефон", "Статус", "Источник", "Примечание", "UTM", "Создано (UTC)"])
+    bookings = (await db.execute(stmt)).scalars().all()
 
-    status_map = {
-        "confirmed": "Ожидается",
-        "completed": "Прошёл ТО",
-        "no_show": "Не явился",
-        "cancelled": "Отменена",
-    }
-    for b in rows:
-        writer.writerow([
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Записи на ТО"
+
+    headers = [
+        "ID",
+        "Дата",
+        "Время",
+        "Госномер",
+        "Телефон",
+        "Статус",
+        "Источник",
+        "Примечание",
+        "UTM",
+        "Создано (UTC)",
+    ]
+    ws.append(headers)
+
+    for cell in ws[1]:
+        cell.font = Font(bold=True)
+    ws.auto_filter.ref = f"A1:J{len(bookings) + 1}"
+
+    for b in bookings:
+        raw_date = getattr(b, "booking_date", "")
+        date_str = raw_date.strftime("%d.%m.%Y") if hasattr(raw_date, "strftime") else str(raw_date or "")
+
+        raw_created = getattr(b, "created_at", None)
+        created_str = raw_created.strftime("%d.%m.%Y %H:%M") if hasattr(raw_created, "strftime") else str(raw_created or "")
+
+        status_val = getattr(b, "status", "")
+        source_val = getattr(b, "source", "")
+
+        ws.append([
             b.id,
-            b.booking_date,
+            date_str,
             b.booking_time,
-            b.car_number,
-            b.phone or "",
-            status_map.get(b.status, b.status),
-            "Сайт" if b.source == "online" else "Диспетчер",
-            b.comment or "",
-            b.utm_source or "",
-            b.created_at.strftime("%Y-%m-%d %H:%M"),
+            _safe_csv_cell(b.car_number),
+            _safe_csv_cell(b.phone),
+            STATUS_LABELS.get(status_val, status_val),
+            SOURCE_LABELS.get(source_val, source_val),
+            _safe_csv_cell(b.comment),
+            _safe_csv_cell(b.utm_source),
+            created_str,
         ])
 
+    for column_cells in ws.columns:
+        max_len = 0
+        col_letter = column_cells[0].column_letter
+        for cell in column_cells:
+            val_len = len(str(cell.value or ""))
+            if val_len > max_len:
+                max_len = val_len
+        ws.column_dimensions[col_letter].width = max_len + 4
+
+    output = io.BytesIO()
+    wb.save(output)
     output.seek(0)
-    filename = f"tehplus_bookings_{date_str or 'all'}.csv"
+
+    filename = f"tehplus-bookings-{date_filter or 'all'}.xlsx"
     return StreamingResponse(
-        iter([output.getvalue()]),
-        media_type="text/csv; charset=utf-8",
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 

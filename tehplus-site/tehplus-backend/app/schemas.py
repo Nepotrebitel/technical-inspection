@@ -11,6 +11,7 @@ MOTO_PLATE_RE = re.compile(rf"^\d{{4}}[{VALID_PLATE_LETTERS}]{{2}}\d{{2,3}}$")
 TRAILER_PLATE_RE = re.compile(rf"^[{VALID_PLATE_LETTERS}]{{2}}\d{{4}}\d{{2,3}}$")
 
 BOOKING_STATUS = Literal["confirmed", "completed", "no_show", "cancelled"]
+MAX_BOOKING_HORIZON_DAYS = 30  # Горизонт онлайн-записи: не более 30 дней вперёд
 
 
 def get_allowed_slots_for_date(target_date: date) -> set[str]:
@@ -91,14 +92,18 @@ class LeadCreate(BaseModel):
             raise ValueError("Некорректная календарная дата.") from exc
 
         now_msk = datetime.now(MSK_TZ)
-        if target_date < now_msk.date():
+        today_msk = now_msk.date()
+        if target_date < today_msk:
             raise ValueError("Нельзя записаться на прошедшую дату.")
+
+        if target_date > today_msk + timedelta(days=MAX_BOOKING_HORIZON_DAYS):
+            raise ValueError(f"Онлайн-запись открыта не более чем на {MAX_BOOKING_HORIZON_DAYS} дней вперёд.")
 
         allowed_slots = get_allowed_slots_for_date(target_date)
         if self.time not in allowed_slots:
             raise ValueError("Выбранное время не входит в режим работы пункта ТО.")
 
-        if target_date == now_msk.date():
+        if target_date == today_msk:
             hour, minute = map(int, self.time.split(":"))
             slot_dt = now_msk.replace(hour=hour, minute=minute, second=0, microsecond=0)
             if slot_dt < now_msk + timedelta(minutes=15):
@@ -124,11 +129,29 @@ class AdminManualBookingCreate(BaseModel):
     def normalize_phone(cls, v: str | None) -> str | None:
         return _normalize_optional_phone(v)
 
+    @field_validator("date")
+    @classmethod
+    def validate_iso_date(cls, v: str) -> str:
+        try:
+            date.fromisoformat(v)
+        except ValueError as exc:
+            raise ValueError("Некорректная календарная дата.") from exc
+        return v
+
 
 class BlockedSlotCreate(BaseModel):
     date: str = Field(..., pattern=r"^\d{4}-\d{2}-\d{2}$")
     time: str = Field(..., pattern=r"^\d{2}:\d{2}$")
     reason: str | None = Field(default="Технический перерыв / Линия занята", max_length=120)
+
+    @field_validator("date")
+    @classmethod
+    def validate_iso_date(cls, v: str) -> str:
+        try:
+            date.fromisoformat(v)
+        except ValueError as exc:
+            raise ValueError("Некорректная календарная дата.") from exc
+        return v
 
 
 class SlotsResponse(BaseModel):

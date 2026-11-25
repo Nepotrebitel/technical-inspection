@@ -79,7 +79,7 @@ export default function Home() {
   const [honeypot, setHoneypot] = useState('');
   const [formOpenedAt, setFormOpenedAt] = useState<number>(0);
   const [isTuningOpen, setIsTuningOpen] = useState(false);
-  const [isRegressOpen, setIsRegressOpen] = useState(false);
+
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMandatoryOpen, setIsMandatoryOpen] = useState(false);
@@ -133,11 +133,11 @@ const [today, setToday] = useState<Date | null>(null);
   }, [today]);
 
   const galleryPhotos = [
-    { src: "/photo/ph-1.jpeg", title: "Линия осмотра" },
-    { src: "/photo/ph-2.jpeg", title: "Диагностика ходовой" },
-    { src: "/photo/ph-3.jpeg", title: "Проверка оптики" },
-    { src: "/photo/ph-4.jpeg", title: "Пункт ТЕХПЛЮС" },
-    { src: "/photo/ph-5.jpeg", title: "Зона ожидания" },
+    { src: "/photo/ph-1.webp", title: "Линия технического осмотра автомобилей в пункте ТЕХПЛЮС, Ростов-на-Дону, ул. Доватора 271" },
+    { src: "/photo/ph-2.webp", title: "Диагностика тормозной системы и ходовой части на стенде при прохождении техосмотра" },
+    { src: "/photo/ph-3.webp", title: "Проверка регулировки фар и световых приборов для получения диагностической карты ЕАИСТО" },
+    { src: "/photo/ph-4.webp", title: "Аккредитованный пункт техосмотра ТЕХПЛЮС (РСА № 16412) в 175 метрах от МРЭО ГИБДД" },
+    { src: "/photo/ph-5.webp", title: " Комфортная зона ожидания для клиентов при оформлении техосмотра, ОСАГО и дубликатов госномеров" },
   ];
 
   const handleNext = () => {
@@ -168,10 +168,6 @@ const [today, setToday] = useState<Date | null>(null);
     if (window.location.hash) window.history.replaceState(null, '', window.location.pathname);
   }, []);
 
-  // 2. Инициализация текущей даты строго на клиенте (для Next.js 16)
-  useEffect(() => {
-    setToday(new Date());
-  }, []);
 
   // 3. Блокировка скролла фона и закрытие модального окна по Escape
   useEffect(() => {
@@ -329,6 +325,13 @@ const [today, setToday] = useState<Date | null>(null);
     setIsSubmitting(true);
     setStatus({ type: 'loading', text: 'Отправка заявки...' });
 
+    const utmSource =
+      typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("utm_source") ||
+        sessionStorage.getItem("tp_utm_source") ||
+        null
+      : null;
+
     try {
           const response = await fetch(`${API_BASE_URL}/api/leads`, {
         method: 'POST',
@@ -397,13 +400,32 @@ const [today, setToday] = useState<Date | null>(null);
     "При выезде за границу (могут потребовать наличие пройденного ТО — рекомендуем уточнять заранее перед поездкой)",
   ];
 
-  const faqs = [
-    { q: "Нужны ли аптечка, огнетушитель и знак?", a: "Технический эксперт проверяет машину по списку параметров. Наличие аптечки, огнетушителя и знака экспертом не проверяется." },
-    { q: "Обязательна ли запись?", a: "Нет, запись не является обязательной. Можем принять в любое удобное для вас время в порядке живой очереди." },
-    { q: "Можно ли оплатить услуги банковской картой?", a: "Да, мы принимаем оплату наличными, картами любых банков и по QR-коду (СБП). Для юрлиц доступна оплата по счету." },
-    { q: "Обязательно ли собственник проходит техосмотр?", a: "Нет, пройти техосмотр может любой человек (представитель собственника). При себе необходимо иметь свидетельство о регистрации ТС или ПТС/ЭПТС, а также документ, удостоверяющий личность." },
-    /*{ q: "Пройду ли я техосмотр с трещиной на лобовом стекле?", a: "Трещины в зоне очистки стеклоочистителя со стороны водителя не допускаются. Если трещина со стороны пассажира — техосмотр пройти можно." },*/
-  ];
+const faqs = [
+  {
+    q: "Нужны ли аптечка, огнетушитель и знак?",
+    a: "Технический эксперт проверяет машину по списку параметров. Наличие аптечки, огнетушителя и знака экспертом не проверяется.",
+  },
+  {
+    q: "Обязательна ли запись?",
+    a: "Нет, запись не является обязательной. Можем принять в любое удобное для вас время в порядке живой очереди.",
+  },
+  {
+    q: "Можно ли оплатить услуги банковской картой?",
+    a: "Да, мы принимаем оплату наличными, картами любых банков и по QR-коду (СБП). Для юрлиц доступна оплата по счету.",
+  },
+  {
+    q: "Обязательно ли собственник проходит техосмотр?",
+    a: "Нет, пройти техосмотр может любой человек (представитель собственника). При себе необходимо иметь свидетельство о регистрации ТС или ПТС/ЭПТС, а также документ, удостоверяющий личность.",
+  },
+  {
+    q: "Как быстро диагностическая карта появляется в базе ЕАИСТО и ГИБДД?",
+    a: "Данные передаются в единую автоматизированную информационную систему технического осмотра (ЕАИСТО) моментально сразу после завершения осмотра. Вы можете сразу ехать в МРЭО (175 метров от нас) для постановки ТС на учёт.",
+  },
+  {
+    q: "Сколько времени занимает техосмотр и изготовление дубликатов госномеров?",
+    a: "Прохождение технического осмотра категорий L, M1, N1 занимает около 30 минут. Изготовление дубликатов государственных регистрационных знаков по ГОСТ Р 50577-2018 (стандартных, квадратных тип 1А, на прицепы и мото) выполняется на месте за 1–2 минуты.",
+  },
+];
 
   return (
     <main className={`min-h-screen bg-[#F8F9F7] text-[#151C2B] selection:bg-[#8BBA82] selection:text-white overflow-x-hidden relative ${manrope.className}`}>
@@ -514,7 +536,7 @@ const [today, setToday] = useState<Date | null>(null);
             <span className={`${playfair.className} text-[#61403A] text-[46px] sm:text-[64px] md:text-[88px] font-semibold leading-[0.9] block pt-1.5 pb-2.5 sm:pt-2 sm:pb-3 md:pt-3 md:pb-4 drop-shadow-sm`}>
               техосмотр
             </span>
-            в Ростове
+            в Ростове-на-Дону
           </h1>
 
           <p className="text-[15px] sm:text-[16px] md:text-[19px] text-[#657080] max-w-md leading-relaxed font-medium">
@@ -561,7 +583,7 @@ const [today, setToday] = useState<Date | null>(null);
           <div className="absolute inset-0 bg-[#61403A] -translate-x-2 translate-y-3 sm:-translate-x-3 sm:translate-y-4 md:-translate-x-5 md:translate-y-6 rounded-[24px] sm:rounded-[28px] md:rounded-[40px] z-0"></div>
           <div className="relative w-full h-full z-10 rounded-[24px] sm:rounded-[28px] md:rounded-[40px] overflow-hidden bg-gray-100 shadow-[0_20px_40px_rgba(97,64,58,0.15)]">
             <Image
-              src="/hero.png"
+              src="/hero.webp"
               alt="Официальный пункт техосмотра ТЕХПЛЮС в Ростове-на-Дону, ул. Доватора зд. 271"
               fill
               sizes="(max-width: 1024px) 100vw, 55vw"
@@ -1552,6 +1574,9 @@ const [today, setToday] = useState<Date | null>(null);
             <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInLeft} className="lg:col-span-1 flex flex-col justify-between space-y-6 sm:space-y-10 bg-white/95 backdrop-blur-2xl p-6 sm:p-8 md:p-10 rounded-[24px] sm:rounded-[32px] border border-white/60 shadow-lg">
               <div>
                 <h2 className="text-[26px] sm:text-[32px] font-extrabold text-[#61403A] mb-5 sm:mb-8 tracking-tight">Ждем вас</h2>
+                <p className="text-xs sm:text-[13px] text-[#657080] mt-2 leading-relaxed">
+                  Советский район, ориентир — 175 метров от МРЭО ГИБДД на Доватора. Удобный заезд для легковых авто, Газелей (N1) и мотоциклов.
+                </p>
                 <div className="space-y-5 sm:space-y-7 text-[#657080]">
                   <div>
                     <div className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[#8BBA82] mb-1.5 sm:mb-2">Адрес СТО</div>

@@ -99,6 +99,7 @@ export default function AdminDashboardPage() {
   // Форма закрытия слота
   const [showBlockForm, setShowBlockForm] = useState(false);
   const [blockDate, setBlockDate] = useState("");
+  const [isBlockTimeOpen, setIsBlockTimeOpen] = useState(false);
   const [blockTime, setBlockTime] = useState("13:00");
   const [blockReason, setBlockReason] = useState("Обед / Технический перерыв");
 
@@ -113,7 +114,7 @@ export default function AdminDashboardPage() {
   } | null>(null);
   const [isTestingNotify, setIsTestingNotify] = useState(false);
   const [loading, setLoading] = useState(false);
-
+  const [isManualTimeOpen, setIsManualTimeOpen] = useState(false);
   useEffect(() => {
     const today = getTodayIso();
     setManualDate(today);
@@ -173,12 +174,17 @@ export default function AdminDashboardPage() {
   }, []);
 
   useEffect(() => {
-    const saved = sessionStorage.getItem("tp_admin_key");
-    if (saved) {
+      const saved = sessionStorage.getItem("tp_admin_key");
+      if (!saved) return;
       setAdminKey(saved);
-      fetchAllData(saved, filterDate, searchQuery);
-    }
-  }, [fetchAllData, filterDate, searchQuery]);
+
+      const delay = searchQuery ? 350 : 0;
+      const timer = setTimeout(() => {
+        fetchAllData(saved, filterDate, searchQuery);
+      }, delay);
+
+      return () => clearTimeout(timer);
+    }, [fetchAllData, filterDate, searchQuery]);  
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -194,13 +200,64 @@ export default function AdminDashboardPage() {
     setInputKey("");
   };
 
+  const adminFetch = useCallback(
+    async (url: string, options: RequestInit = {}): Promise<Response | null> => {
+      try {
+        const res = await fetch(url, {
+          ...options,
+          headers: {
+            Accept: "application/json",
+            ...(options.headers || {}),
+            "X-Admin-Key": adminKey,
+          },
+        });
+
+        if (res.status === 401 || res.status === 429) {
+          const errData = await res.json().catch(() => ({}));
+          setAuthError(errData.detail || "Сессия завершена. Введите ключ доступа заново.");
+          sessionStorage.removeItem("tp_admin_key");
+          setAdminKey("");
+          return null;
+        }
+        return res;
+      } catch {
+        alert("Не удалось связаться с сервером API. Проверьте соединение.");
+        return null;
+      }
+    },
+    [adminKey]
+  );
+
+  // Автовыход через 30 минут бездействия на посту ТО (защита ПДн по 152-ФЗ)
+  useEffect(() => {
+    if (!adminKey) return;
+    let timer: ReturnType<typeof setTimeout>;
+    const resetTimer = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        sessionStorage.removeItem("tp_admin_key");
+        setAdminKey("");
+        setAuthError("Сессия автоматически завершена после 30 минут бездействия.");
+      }, 30 * 60 * 1000);
+    };
+
+    const events = ["mousedown", "keydown", "touchstart", "scroll"];
+    events.forEach((ev) => window.addEventListener(ev, resetTimer, { passive: true }));
+    resetTimer();
+
+    return () => {
+      clearTimeout(timer);
+      events.forEach((ev) => window.removeEventListener(ev, resetTimer));
+    };
+  }, [adminKey]);
+
   // Ручная запись клиента
-  const handleCreateManual = async (e: React.FormEvent) => {
+ const handleCreateManual = async (e: React.FormEvent) => {
     e.preventDefault();
     setManualMsg("");
-    const res = await fetch(`${API_BASE_URL}/api/admin/bookings/manual`, {
+    const res = await adminFetch(`${API_BASE_URL}/api/admin/bookings/manual`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "X-Admin-Key": adminKey },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         carNumber: manualCar,
         phone: manualPhone || null,
@@ -209,26 +266,28 @@ export default function AdminDashboardPage() {
         comment: manualComment || null,
       }),
     });
+    if (!res) return;
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
       setManualCar("");
       setManualPhone("");
       setManualComment("");
       setShowManualForm(false);
+      setIsManualTimeOpen(false);
       fetchAllData(adminKey, filterDate, searchQuery);
     } else {
       setManualMsg(data.detail || "Ошибка при добавлении записи.");
     }
   };
 
-  // Блокировка слота
   const handleBlockSlot = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await fetch(`${API_BASE_URL}/api/admin/blocked-slots`, {
+    const res = await adminFetch(`${API_BASE_URL}/api/admin/blocked-slots`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "X-Admin-Key": adminKey },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ date: blockDate, time: blockTime, reason: blockReason }),
     });
+    if (!res) return;
     if (res.ok) {
       setShowBlockForm(false);
       fetchAllData(adminKey, filterDate, searchQuery);
@@ -239,46 +298,53 @@ export default function AdminDashboardPage() {
   };
 
   const handleUnblockSlot = async (id: number) => {
-    const res = await fetch(`${API_BASE_URL}/api/admin/blocked-slots/${id}`, {
-      method: "DELETE",
-      headers: { "X-Admin-Key": adminKey },
-    });
-    if (res.ok) fetchAllData(adminKey, filterDate, searchQuery);
+    const res = await adminFetch(`${API_BASE_URL}/api/admin/blocked-slots/${id}`, { method: "DELETE" });
+    if (res?.ok) fetchAllData(adminKey, filterDate, searchQuery);
   };
 
-  // Смена статуса визита (confirmed / completed / no_show / cancelled)
   const handleChangeStatus = async (id: number, status: BookingStatus) => {
-    const res = await fetch(
+    const res = await adminFetch(
       `${API_BASE_URL}/api/admin/bookings/${id}/status?status=${encodeURIComponent(status)}`,
-      { method: "PATCH", headers: { "X-Admin-Key": adminKey } }
+      { method: "PATCH" }
     );
-    if (res.ok) fetchAllData(adminKey, filterDate, searchQuery);
+    if (res?.ok) fetchAllData(adminKey, filterDate, searchQuery);
   };
 
   const handleDeletePdn = async (id: number) => {
     if (!confirm(`Безвозвратно удалить запись #${id} и персональные данные клиента (ст. 21 152-ФЗ)?`)) return;
-    const res = await fetch(`${API_BASE_URL}/api/admin/bookings/${id}`, {
-      method: "DELETE",
-      headers: { "X-Admin-Key": adminKey },
-    });
-    if (res.ok) fetchAllData(adminKey, filterDate, searchQuery);
+    const res = await adminFetch(`${API_BASE_URL}/api/admin/bookings/${id}`, { method: "DELETE" });
+    if (res?.ok) fetchAllData(adminKey, filterDate, searchQuery);
   };
+
 
   // Скачивание CSV для Excel
   const handleExportCsv = async () => {
-    const url = filterDate
-      ? `${API_BASE_URL}/api/admin/export-csv?date=${encodeURIComponent(filterDate)}`
-      : `${API_BASE_URL}/api/admin/export-csv`;
-    const res = await fetch(url, { headers: { "X-Admin-Key": adminKey } });
-    if (!res.ok) return;
-    const blob = await res.blob();
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `tehplus_bookings_${filterDate || "all"}.csv`;
-    link.click();
-    URL.revokeObjectURL(link.href);
-  };
+    try {
+      const url = filterDate
+        ? `${API_BASE_URL}/api/admin/export-csv?date=${filterDate}`
+        : `${API_BASE_URL}/api/admin/export-csv`;
 
+      const res = await fetch(url, {
+        headers: { "X-Admin-Key": adminKey },
+      });
+
+      if (!res.ok) {
+        alert(`Ошибка выгрузки таблицы (код ${res.status})`);
+        return;
+      }
+
+      const blob = await res.blob();
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `tehplus-bookings-${filterDate || "all"}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(link.href);
+    } catch {
+      alert("Не удалось связаться с сервером API. Проверьте, запущен ли бэкенд.");
+    }
+  };
   // Тест почты и MAX
   const handleTestNotifications = async () => {
     setIsTestingNotify(true);
@@ -298,11 +364,8 @@ export default function AdminDashboardPage() {
 
   const handleClearLogs = async () => {
     if (!confirm("Очистить журнал ошибок и событий?")) return;
-    const res = await fetch(`${API_BASE_URL}/api/admin/logs`, {
-      method: "DELETE",
-      headers: { "X-Admin-Key": adminKey },
-    });
-    if (res.ok) setLogs([]);
+    const res = await adminFetch(`${API_BASE_URL}/api/admin/logs`, { method: "DELETE" });
+    if (res?.ok) setLogs([]);
   };
 
   if (!adminKey) {
@@ -325,6 +388,7 @@ export default function AdminDashboardPage() {
           <input
             type="password"
             required
+            autoComplete="current-password"
             value={inputKey}
             onChange={(e) => setInputKey(e.target.value)}
             placeholder="Секретный ключ доступа..."
@@ -503,7 +567,7 @@ export default function AdminDashboardPage() {
                     onClick={handleExportCsv}
                     className="px-3.5 py-2 rounded-xl bg-[#F8F9F7] hover:bg-[#EEF3ED] text-[#61403A] border border-[#E8EBE8] text-xs font-extrabold cursor-pointer"
                   >
-                    Выгрузить Excel (CSV)
+                    Выгрузить Excel (.xlsx)
                   </button>
                 </div>
               </div>
@@ -562,17 +626,47 @@ export default function AdminDashboardPage() {
                     onChange={(e) => setManualDate(e.target.value)}
                     className="p-2.5 rounded-xl border border-[#E8EBE8] text-sm font-semibold"
                   />
-                  <select
-                    value={manualTime}
-                    onChange={(e) => setManualTime(e.target.value)}
-                    className="p-2.5 rounded-xl border border-[#E8EBE8] text-sm font-bold"
-                  >
-                    {TIME_SLOTS_ALL.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setIsManualTimeOpen((prev) => !prev)}
+                      className="w-full flex items-center justify-between p-2.5 rounded-xl border border-[#E8EBE8] bg-white text-sm font-bold text-[#61403A] hover:border-[#8BBA82] transition-colors cursor-pointer"
+                    >
+                      <span>{manualTime}</span>
+                      <svg
+                        className={`h-4 w-4 text-[#657080] transition-transform ${isManualTimeOpen ? "rotate-180" : ""}`}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+
+                    {isManualTimeOpen && (
+                      <div className="absolute left-0 right-0 top-full z-30 mt-1.5 max-h-52 overflow-y-auto rounded-xl border border-[#E8EBE8] bg-white p-1.5 shadow-lg">
+                        <div className="grid grid-cols-3 gap-1">
+                          {TIME_SLOTS_ALL.map((t) => (
+                            <button
+                              key={t}
+                              type="button"
+                              onClick={() => {
+                                setManualTime(t);
+                                setIsManualTimeOpen(false);
+                              }}
+                              className={`rounded-lg py-1.5 text-center text-xs font-bold transition-colors cursor-pointer ${
+                                manualTime === t
+                                  ? "bg-[#8BBA82] text-white"
+                                  : "text-[#61403A] hover:bg-[#F4F6F4]"
+                              }`}
+                            >
+                              {t}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   <input
                     type="text"
                     placeholder="Примечание (например, Газель)"
@@ -620,17 +714,71 @@ export default function AdminDashboardPage() {
                     onChange={(e) => setBlockDate(e.target.value)}
                     className="p-2.5 rounded-xl border border-[#E8EBE8] text-sm font-semibold"
                   />
-                  <select
-                    value={blockTime}
-                    onChange={(e) => setBlockTime(e.target.value)}
-                    className="p-2.5 rounded-xl border border-[#E8EBE8] text-sm font-bold"
-                  >
-                    {TIME_SLOTS_ALL.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <input
+                      required
+                      type="date"
+                      value={blockDate}
+                      onChange={(e) => setBlockDate(e.target.value)}
+                      className="p-2.5 rounded-xl border border-[#E8EBE8] text-sm font-semibold"
+                    />
+
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setIsBlockTimeOpen((prev) => !prev)}
+                        className="w-full flex items-center justify-between p-2.5 rounded-xl border border-[#E8EBE8] bg-white text-sm font-bold text-[#61403A] hover:border-amber-400 transition-colors cursor-pointer"
+                      >
+                        <span>{blockTime}</span>
+                        <svg
+                          className={`h-4 w-4 text-[#657080] transition-transform ${isBlockTimeOpen ? "rotate-180" : ""}`}
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+
+                      {isBlockTimeOpen && (
+                        <>
+                          <div
+                            className="fixed inset-0 z-20"
+                            onClick={() => setIsBlockTimeOpen(false)}
+                          />
+                          <div className="absolute left-0 sm:left-auto sm:right-0 top-full z-30 mt-1.5 w-[270px] sm:w-[300px] max-h-64 overflow-y-auto rounded-2xl border border-[#E8EBE8] bg-white p-2.5 shadow-xl">
+                            <div className="grid grid-cols-3 gap-1.5">
+                              {TIME_SLOTS_ALL.map((t) => (
+                                <button
+                                  key={t}
+                                  type="button"
+                                  onClick={() => {
+                                    setBlockTime(t);
+                                    setIsBlockTimeOpen(false);
+                                  }}
+                                  className={`rounded-lg py-1.5 text-center text-xs font-bold transition-colors cursor-pointer ${
+                                    blockTime === t
+                                      ? "bg-amber-600 text-white"
+                                      : "text-[#61403A] hover:bg-[#F4F6F4]"
+                                  }`}
+                                >
+                                  {t}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    <input
+                      type="text"
+                      value={blockReason}
+                      onChange={(e) => setBlockReason(e.target.value)}
+                      placeholder="Причина закрытия..."
+                      className="p-2.5 rounded-xl border border-[#E8EBE8] text-sm"
+                    />
+                  </div>
                   <input
                     type="text"
                     value={blockReason}

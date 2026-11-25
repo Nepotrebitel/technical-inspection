@@ -3,6 +3,8 @@ from fastapi import APIRouter, Depends, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Depends, Query, Request, status
+from app.routers.bookings import _get_real_client_ip
 
 from app.database import get_db
 from app.models import AnalyticsEvent, Booking, SystemLog
@@ -60,8 +62,7 @@ async def report_client_error(
     request: Request,
     db: AsyncSession = Depends(get_db),
 ) -> None:
-    forwarded = request.headers.get("X-Forwarded-For")
-    ip = forwarded.split(",")[0].strip()[:64] if forwarded else (request.client.host[:64] if request.client else None)
+    ip = _get_real_client_ip(request)
 
     db.add(
         SystemLog(
@@ -78,7 +79,7 @@ async def report_client_error(
 
 @router.get("/report", dependencies=[Depends(verify_admin_key)])
 async def get_behavior_report(
-    days: int = 14,
+    days: int = Query(default=14, ge=1, le=365),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     since = datetime.now(timezone.utc) - timedelta(days=days)

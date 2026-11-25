@@ -42,10 +42,12 @@ function getSessionId(): string {
   return generated;
 }
 
+const reportedErrors = new Set<string>();
+
 function flushEvents() {
   if (eventQueue.length === 0) return;
-  const batch = [...eventQueue];
-  eventQueue = [];
+  const batch = eventQueue.slice(0, 30);
+  eventQueue = eventQueue.slice(30);
 
   const body = JSON.stringify({ events: batch });
   const url = `${API_BASE_URL}/api/analytics/track`;
@@ -204,6 +206,10 @@ export function SiteAnalytics() {
 
     // 6. Перехват необработанных JS-ошибок и сбоев промисов в браузере клиента для админ-панели
     const sendErrorToBackend = (message: string, details?: string) => {
+      const fingerprint = `${message}:${details || ""}`;
+      if (reportedErrors.has(fingerprint) || reportedErrors.size >= 5) return;
+      reportedErrors.add(fingerprint);
+
       fetch(`${API_BASE_URL}/api/analytics/client-error`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

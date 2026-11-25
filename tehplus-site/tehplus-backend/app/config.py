@@ -1,11 +1,14 @@
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+DEFAULT_INSECURE_KEY = "change-me-to-very-long-random-secret-key-2026"
 
 
 class Settings(BaseSettings):
     app_env: str = "development"
     database_url: str = "sqlite+aiosqlite:///./tehplus_rf.db"
     cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
-    admin_api_key: str = "change-me-to-very-long-random-secret-key-2026"
+    admin_api_key: str = DEFAULT_INSECURE_KEY
 
     max_bookings_per_slot: int = 2
 
@@ -26,6 +29,16 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
+
+    @model_validator(mode="after")
+    def validate_production_security(self) -> "Settings":
+        if self.app_env == "production":
+            if self.admin_api_key == DEFAULT_INSECURE_KEY or len(self.admin_api_key.strip()) < 24:
+                raise ValueError(
+                    "КРИТИЧЕСКАЯ ОШИБКА БЕЗОПАСНОСТИ: В режиме production запрещено использовать "
+                    "стандартный или короткий ADMIN_API_KEY (минимум 24 символа)."
+                )
+        return self
 
     @property
     def cors_origins_list(self) -> list[str]:

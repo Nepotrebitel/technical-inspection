@@ -16,11 +16,31 @@ def _sanitize_header(value: str) -> str:
     return value.replace("\r", "").replace("\n", " ").strip()
 
 
+SMTP_PROVIDERS: dict[str, tuple[str, int, bool]] = {
+    "yandex.ru": ("smtp.yandex.ru", 465, True),
+    "ya.ru": ("smtp.yandex.ru", 465, True),
+    "gmail.com": ("smtp.gmail.com", 465, True),
+    "mail.ru": ("smtp.mail.ru", 465, True),
+    "inbox.ru": ("smtp.mail.ru", 465, True),
+    "list.ru": ("smtp.mail.ru", 465, True),
+    "bk.ru": ("smtp.mail.ru", 465, True),
+}
+
+
+def _resolve_smtp_settings(user_email: str) -> tuple[str, int, bool]:
+    domain = user_email.split("@")[-1].lower().strip() if "@" in user_email else ""
+    if domain in SMTP_PROVIDERS:
+        return SMTP_PROVIDERS[domain]
+    return settings.smtp_host, settings.smtp_port, (settings.smtp_port == 465)
+
+
 def _send_email_sync(subject: str, body: str) -> None:
     if not settings.smtp_enabled:
         raise RuntimeError("SMTP_ENABLED=false в файле .env")
     if not settings.smtp_user or not settings.smtp_password:
         raise RuntimeError("Не заданы SMTP_USER или SMTP_PASSWORD в .env")
+
+    host, port, use_ssl = _resolve_smtp_settings(settings.smtp_user)
 
     msg = EmailMessage()
     msg["Subject"] = _sanitize_header(subject)
@@ -28,9 +48,15 @@ def _send_email_sync(subject: str, body: str) -> None:
     msg["To"] = settings.smtp_to or settings.smtp_user
     msg.set_content(body)
 
-    with smtplib.SMTP_SSL(settings.smtp_host, settings.smtp_port, timeout=10) as server:
-        server.login(settings.smtp_user, settings.smtp_password)
-        server.send_message(msg)
+    if use_ssl:
+        with smtplib.SMTP_SSL(host, port, timeout=10) as server:
+            server.login(settings.smtp_user, settings.smtp_password)
+            server.send_message(msg)
+    else:
+        with smtplib.SMTP(host, port, timeout=10) as server:
+            server.starttls()
+            server.login(settings.smtp_user, settings.smtp_password)
+            server.send_message(msg)
 
 
 async def _send_max_message(text: str) -> None:
@@ -39,16 +65,14 @@ async def _send_max_message(text: str) -> None:
     if not settings.max_bot_token or not settings.max_chat_id:
         raise RuntimeError("Не заданы MAX_BOT_TOKEN или MAX_CHAT_ID в .env")
 
-    base_url = settings.max_api_url.rstrip("/")
-    params = {
-        "access_token": settings.max_bot_token,
-        "chat_id": settings.max_chat_id,
-    }
+    url = settings.max_api_url.rstrip("/")
+    headers = {"Authorization": settings.max_bot_token}
+    params = {"chat_id": settings.max_chat_id}
     payload = {"text": text}
 
     async with httpx.AsyncClient(timeout=10.0) as client:
-        response = await client.post(base_url, params=params, json=payload)
-        response.raise_for_status()
+        resp = await client.post(url, headers=headers, params=params, json=payload)
+        resp.raise_for_status()
 
 
 async def notify_new_booking(
@@ -71,7 +95,8 @@ async def notify_new_booking(
 
     email_state = "disabled"
     max_state = "disabled"
-
+    if not settings.smtp_enabled and not settings.max_bot_enabled:
+        return
     # 1. Отправка на почту Яндекс
     if settings.smtp_enabled:
         subject = f"Запись на ТО #{booking_id}: {booking_date} в {booking_time} • {car_number}"
