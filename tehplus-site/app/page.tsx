@@ -446,9 +446,9 @@ const faqs = [
           <path d="M1440,160 C1120,0, 1020,320, 720,160 C420,0, 320,300, 0,160" />
         </svg>
 
-        <div className="absolute top-[-10%] right-[-5%] w-[700px] h-[700px] rounded-full bg-gradient-to-br from-[#8BBA82] to-[#EEF3ED] opacity-65 blur-[90px]"></div>
-        <div className="absolute bottom-[10%] left-[-10%] w-[600px] h-[600px] rounded-full bg-gradient-to-tr from-[#61403A] to-[#8BBA82] opacity-[0.25] blur-[110px]"></div>
-        <div className="absolute top-[35%] left-[-15%] w-[500px] h-[500px] rounded-full bg-[#8BBA82] opacity-35 blur-[90px]"></div>
+        <div className="absolute top-[-10%] right-[-5%] w-[350px] md:w-[700px] h-[350px] md:h-[700px] rounded-full bg-gradient-to-br from-[#8BBA82] to-[#EEF3ED] opacity-55 blur-[60px] md:blur-[90px]"></div>
+        <div className="hidden md:block absolute bottom-[10%] left-[-10%] w-[600px] h-[600px] rounded-full bg-gradient-to-tr from-[#61403A] to-[#8BBA82] opacity-[0.25] blur-[110px]"></div>
+        <div className="hidden md:block absolute top-[35%] left-[-15%] w-[500px] h-[500px] rounded-full bg-[#8BBA82] opacity-35 blur-[90px]"></div>
       </div>
 
       {/* ШАПКА */}
@@ -531,12 +531,14 @@ const faqs = [
             <span>Аккредитация РСА: № 16412 (реестр операторов ТО)</span>
           </div>
 
-          <h1 className="text-[34px] sm:text-[48px] md:text-[66px] font-bold tracking-tight leading-[1.1] text-[#151C2B]">
+          <h1 className="text-[32px] min-[375px]:text-[34px] sm:text-[48px] md:text-[66px] font-bold tracking-tight leading-[1.1] text-[#151C2B]">
             Официальный <br className="hidden sm:block" />
-            <span className={`${playfair.className} text-[#61403A] text-[46px] sm:text-[64px] md:text-[88px] font-semibold leading-[0.9] block pt-1.5 pb-2.5 sm:pt-2 sm:pb-3 md:pt-3 md:pb-4 drop-shadow-sm`}>
+            <span className={`${playfair.className} text-[#61403A] text-[42px] min-[375px]:text-[46px] sm:text-[64px] md:text-[88px] font-semibold leading-[0.9] block pt-1.5 pb-2.5 sm:pt-2 sm:pb-3 md:pt-3 md:pb-4 drop-shadow-sm`}>
               техосмотр
             </span>
-            в Ростове-на-Дону
+            <span className="block whitespace-nowrap text-[24px] min-[375px]:text-[28px] sm:text-[40px] md:text-[50px] xl:text-[56px]">
+              в Ростове-на-Дону
+            </span>
           </h1>
 
           <p className="text-[15px] sm:text-[16px] md:text-[19px] text-[#657080] max-w-md leading-relaxed font-medium">
@@ -834,8 +836,14 @@ const faqs = [
                   </div>
                 </div>
 
-                <div className={`${openService === 1 ? 'flex' : 'hidden'} md:flex items-center justify-between pt-3.5 md:pt-4 mt-3.5 md:mt-4 border-t border-[#E8EBE8] md:min-h-[28px]`}>
+                <div className={`${openService === 1 ? 'flex' : 'hidden'} md:flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 pt-3.5 md:pt-4 mt-3.5 md:mt-4 border-t border-[#E8EBE8] md:min-h-[28px]`}>
                   <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[#657080]">Е-ОСАГО и бумажный бланк</span>
+                  <a
+                    href="/osago"
+                    className="text-xs font-extrabold text-[#5B8E52] hover:underline"
+                  >
+                    Подробнее об ОСАГО →
+                  </a>
                 </div>
               </div>
             </TiltCard>
@@ -879,7 +887,12 @@ const faqs = [
                 </div>
 
                 <div className={`${openService === 2 ? 'flex' : 'hidden'} md:flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 pt-3.5 md:pt-4 mt-3.5 md:mt-4 border-t border-[#E8EBE8]`}>
-                  <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[#657080]">ГОСТ Р 50577-2018</span>
+                  <a
+                    href="/dublikaty-gosnomerov"
+                    className="text-xs font-extrabold text-[#5B8E52] hover:underline"
+                  >
+                    Виды знаков и цены →
+                  </a>
                   <button
                     type="button"
                     onClick={() => setActiveDrawer('plates')}
@@ -932,7 +945,12 @@ const faqs = [
                 </div>
 
                 <div className={`${openService === 3 ? 'flex' : 'hidden'} md:flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 pt-3.5 md:pt-4 mt-3.5 md:mt-4 border-t border-white/15`}>
-                  <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-white/60">Полное сопровождение</span>
+                  <a
+                    href="/pereoborudovanie"
+                    className="text-xs font-extrabold text-[#8BBA82] hover:underline"
+                  >
+                    Порядок регистрации →
+                  </a>
                   <button
                     type="button"
                     onClick={() => setActiveDrawer('tuning')}
@@ -1252,41 +1270,46 @@ const faqs = [
               </div>
 
               <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8 lg:gap-10 items-start">
-                {/* ЛЕВЫЙ СТОЛБИК: Номер машины, Телефон и Электронный талончик сразу под телефоном */}
-                <div className="space-y-4 sm:space-y-5 bg-white/5 p-4 sm:p-6 md:p-8 rounded-[20px] sm:rounded-[28px] border border-white/10">
-                  <div>
-                    <label className="block text-[10px] md:text-xs font-bold uppercase tracking-wider text-white/60 mb-1.5 sm:mb-2 pl-1">
-                      Номер машины
-                    </label>
-                    <input
-                      required
-                      type="text"
-                      name="carNumber"
-                      maxLength={12}
-                      value={formData.carNumber}
-                      onChange={handleChange}
-                      className="w-full p-3.5 sm:p-4 md:p-5 bg-white/10 border border-white/20 rounded-[16px] sm:rounded-[20px] text-white placeholder-white/30 focus:outline-none focus:border-[#8BBA82] focus:bg-white/20 uppercase text-[15px] md:text-base transition-all"
-                      placeholder="А 123 АА 161"
-                    />
+                {/* ЛЕВЫЙ СТОЛБИК НА ДЕСКТОПЕ / ВЕРХНЯЯ ЧАСТЬ НА МОБИЛЬНОМ */}
+                <div className="contents lg:block lg:space-y-5 lg:bg-white/5 lg:p-8 lg:rounded-[28px] lg:border lg:border-white/10">
+                  <div className="order-1 space-y-4 sm:space-y-5 bg-white/5 lg:bg-transparent p-4 sm:p-6 lg:p-0 rounded-[20px] lg:rounded-none border border-white/10 lg:border-none">
+                    <div>
+                      <label className="block text-[10px] md:text-xs font-bold uppercase tracking-wider text-white/60 mb-1.5 sm:mb-2 pl-1">
+                        Номер машины
+                      </label>
+                      <input
+                        required
+                        type="text"
+                        name="carNumber"
+                        autoComplete="off"
+                        autoCapitalize="characters"
+                        maxLength={12}
+                        value={formData.carNumber}
+                        onChange={handleChange}
+                        className="w-full p-3.5 sm:p-4 md:p-5 bg-white/10 border border-white/20 rounded-[16px] sm:rounded-[20px] text-white placeholder-white/30 focus:outline-none focus:border-[#8BBA82] focus:bg-white/20 uppercase text-[16px] transition-all"
+                        placeholder="А 123 АА 161"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] md:text-xs font-bold uppercase tracking-wider text-white/60 mb-1.5 sm:mb-2 pl-1">
+                        Телефон для связи <span className="normal-case font-medium text-white/45">(необязательно)</span>
+                      </label>
+                      <input
+                        type="tel"
+                        inputMode="tel"
+                        name="phone"
+                        maxLength={20}
+                        value={formData.phone}
+                        onChange={handleChange}
+                        className="w-full p-3.5 sm:p-4 md:p-5 bg-white/10 border border-white/20 rounded-[16px] sm:rounded-[20px] text-white placeholder-white/30 focus:outline-none focus:border-[#8BBA82] focus:bg-white/20 text-[16px] transition-all"
+                        placeholder="+7 (___) ___-__-__"
+                      />
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="block text-[10px] md:text-xs font-bold uppercase tracking-wider text-white/60 mb-1.5 sm:mb-2 pl-1">
-                      Телефон для связи <span className="normal-case font-medium text-white/45">(необязательно)</span>
-                    </label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      maxLength={20}
-                      value={formData.phone}
-                      onChange={handleChange}
-                      className="w-full p-3.5 sm:p-4 md:p-5 bg-white/10 border border-white/20 rounded-[16px] sm:rounded-[20px] text-white placeholder-white/30 focus:outline-none focus:border-[#8BBA82] focus:bg-white/20 text-[15px] md:text-base transition-all"
-                      placeholder="+7 (___) ___-__-__"
-                    />
-                  </div>
-
-                  {/* Живой электронный талончик — закреплён сразу под полем телефона */}
-                  <div className="relative overflow-hidden bg-white/10 backdrop-blur-xl border border-white/25 rounded-[18px] sm:rounded-[22px] p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 sm:gap-4">
+                  {/* Живой электронный талончик: на мобильном (order-3) встаёт сразу после выбора времени и перед кнопкой */}
+                  <div className="order-3 relative overflow-hidden bg-white/10 backdrop-blur-xl border border-white/25 rounded-[18px] sm:rounded-[22px] p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 sm:gap-4">
                     <div className="flex flex-col gap-2 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-[#8BBA82] animate-pulse shrink-0"></span>
@@ -1295,7 +1318,6 @@ const faqs = [
                         </span>
                       </div>
 
-                      {/* Номерной знак в стиле РФ */}
                       <div className="inline-flex items-stretch bg-white text-[#151C2B] rounded-lg border-2 border-[#151C2B] overflow-hidden shadow-md w-fit max-w-full">
                         <div className={`px-3 py-1.5 font-black tracking-wider text-[16px] sm:text-lg flex items-center whitespace-nowrap ${ticketPlate.isPlaceholder ? 'opacity-40' : ''}`}>
                           {ticketPlate.main}
@@ -1333,16 +1355,16 @@ const faqs = [
                   </div>
                 </div>
 
-                {/* ПРАВЫЙ СТОЛБИК: Быстрый выбор дня, календарь и слоты */}
-                <div className="space-y-4 sm:space-y-5 bg-white/5 p-4 sm:p-6 md:p-8 rounded-[20px] sm:rounded-[28px] border border-white/10 flex flex-col justify-between h-full">
-                  <div className="space-y-4 sm:space-y-5">
+                {/* ПРАВЫЙ СТОЛБИК НА ДЕСКТОПЕ */}
+                <div className="contents lg:flex lg:flex-col lg:justify-between lg:space-y-5 lg:bg-white/5 lg:p-8 lg:rounded-[28px] lg:border lg:border-white/10 lg:h-full">
+                  <div className="order-2 space-y-4 sm:space-y-5 bg-white/5 lg:bg-transparent p-4 sm:p-6 lg:p-0 rounded-[20px] lg:rounded-none border border-white/10 lg:border-none">
                     <div>
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2 pl-1">
                         <label className="block text-[10px] md:text-xs font-bold uppercase tracking-wider text-white/60">
                           Выберите день визита
                         </label>
 
-                        <div className="flex items-center gap-1.5 flex-wrap">
+                        <div className="grid grid-cols-3 sm:flex items-center gap-1.5">
                           {quickDates.map((qd) => {
                             const active = qd.date ? isSameDay(formData.date, qd.date) : false;
                             return (
@@ -1354,7 +1376,7 @@ const faqs = [
                                   target.setDate(target.getDate() + qd.offset);
                                   handleSelectDate(target);
                                 }}
-                                className={`px-3 py-1.5 sm:px-2.5 sm:py-1 rounded-full text-[11.5px] sm:text-[11px] font-bold transition-all cursor-pointer ${
+                                className={`px-2 py-2 sm:px-2.5 sm:py-1 rounded-xl sm:rounded-full text-[11.5px] sm:text-[11px] font-bold transition-all cursor-pointer text-center ${
                                   active
                                     ? 'bg-[#8BBA82] text-white shadow-sm'
                                     : 'bg-white/10 text-white/85 hover:bg-white/20'
@@ -1374,12 +1396,14 @@ const faqs = [
                           locale="ru"
                           dateFormat="dd MMMM yyyy"
                           minDate={today}
+                          popperPlacement="bottom-start"
+                          onFocus={(e) => e.target.blur()}
                           placeholderText="Или выберите дату в календаре"
-                          className="w-full p-3.5 sm:p-4 md:p-5 bg-white/10 border border-white/20 rounded-[16px] sm:rounded-[20px] text-white placeholder-white/50 focus:outline-none focus:border-[#8BBA82] focus:bg-white/20 text-[15px] md:text-[17px] font-bold cursor-pointer transition-all"
+                          className="w-full p-3.5 sm:p-4 md:p-5 bg-white/10 border border-white/20 rounded-[16px] sm:rounded-[20px] text-white placeholder-white/50 focus:outline-none focus:border-[#8BBA82] focus:bg-white/20 text-[16px] md:text-[17px] font-bold cursor-pointer transition-all"
                           wrapperClassName="w-full"
                         />
                       ) : (
-                        <div className="w-full p-3.5 sm:p-4 md:p-5 bg-white/10 border border-white/20 rounded-[16px] sm:rounded-[20px] text-white/50 text-[15px] md:text-[17px] font-bold">
+                        <div className="w-full p-3.5 sm:p-4 md:p-5 bg-white/10 border border-white/20 rounded-[16px] sm:rounded-[20px] text-white/50 text-[16px] md:text-[17px] font-bold">
                           Или выберите дату в календаре
                         </div>
                       )}
@@ -1416,7 +1440,7 @@ const faqs = [
                                     setFormData((prev) => ({ ...prev, time }));
                                   }}
                                   title={isBooked ? "Это время уже занято" : `Выбрать ${time}`}
-                                  className={`py-3 sm:py-2.5 px-1 md:px-2 text-[13px] sm:text-sm font-bold rounded-xl border transition-all whitespace-nowrap select-none ${
+                                  className={`py-3 sm:py-2.5 px-1 md:px-2 text-[14px] sm:text-sm font-bold rounded-xl border transition-all whitespace-nowrap select-none ${
                                     isBooked
                                       ? 'bg-white/5 border-white/10 text-white/30 line-through cursor-not-allowed'
                                       : isSelected
@@ -1438,8 +1462,8 @@ const faqs = [
                     )}
                   </div>
 
-                 <div className="pt-2 space-y-3.5">
-                    {/* Скрытое поле-ловушка (Honeypot) от спам-ботов: человек его не видит, а бот заполняет */}
+                  {/* Согласие и кнопка отправки: order-4 на мобильном (в самом низу после талона) */}
+                  <div className="order-4 pt-1 lg:pt-2 space-y-3.5 bg-white/5 lg:bg-transparent p-4 sm:p-6 lg:p-0 rounded-[20px] lg:rounded-none border border-white/10 lg:border-none">
                     <input
                       type="text"
                       name="website"
@@ -1451,13 +1475,12 @@ const faqs = [
                       aria-hidden="true"
                     />
 
-                    {/* Обязательный чекбокс согласия на обработку ПДн по 152-ФЗ */}
                     <label className="flex items-start gap-3 cursor-pointer select-none text-left">
                       <input
                         type="checkbox"
                         checked={consentAccepted}
                         onChange={(e) => setConsentAccepted(e.target.checked)}
-                        className="mt-0.5 w-4 h-4 rounded border-white/30 accent-[#8BBA82] shrink-0 cursor-pointer"
+                        className="mt-0.5 w-5 h-5 sm:w-4 sm:h-4 rounded border-white/30 accent-[#8BBA82] shrink-0 cursor-pointer"
                       />
                       <span className="text-xs text-white/75 leading-snug">
                         Я даю согласие ООО «ТЕХПЛЮС» на обработку персональных данных (телефон, госномер авто) для записи на техосмотр в соответствии с{" "}
@@ -1574,13 +1597,13 @@ const faqs = [
             <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInLeft} className="lg:col-span-1 flex flex-col justify-between space-y-6 sm:space-y-10 bg-white/95 backdrop-blur-2xl p-6 sm:p-8 md:p-10 rounded-[24px] sm:rounded-[32px] border border-white/60 shadow-lg">
               <div>
                 <h2 className="text-[26px] sm:text-[32px] font-extrabold text-[#61403A] mb-5 sm:mb-8 tracking-tight">Ждем вас</h2>
-                <p className="text-xs sm:text-[13px] text-[#657080] mt-2 leading-relaxed">
-                  Советский район, ориентир — 175 метров от МРЭО ГИБДД на Доватора. Удобный заезд для легковых авто, Газелей (N1) и мотоциклов.
-                </p>
                 <div className="space-y-5 sm:space-y-7 text-[#657080]">
                   <div>
                     <div className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[#8BBA82] mb-1.5 sm:mb-2">Адрес СТО</div>
                     <div className="font-bold text-[#151C2B] leading-snug text-[15px] sm:text-[16px]">344090, Ростовская обл.,<br />г. Ростов-на-Дону,<br />ул. Доватора, зд. 271, стр. 1</div>
+                    <p className="text-xs sm:text-[13px] text-[#657080] mt-2 leading-relaxed">
+                      Советский район, ориентир — 175 метров от МРЭО ГИБДД на Доватора. Удобный заезд для легковых авто, Газелей (N1) и мотоциклов.
+                    </p>
                   </div>
                   <div>
                     <div className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[#8BBA82] mb-1.5 sm:mb-2">Часы работы</div>
@@ -1616,9 +1639,14 @@ const faqs = [
             <p className="text-[#151C2B] font-extrabold text-[14px] sm:text-[15px]">ООО "ТЕХПЛЮС" • ИНН 6168125681 • ОГРН 1256100025697</p>
             <p>Адрес: 344090, Ростовская обл., г. Ростов-на-Дону, ул. Доватора, зд. 271, стр. 1</p>
           </div>
-          <div className="md:text-right space-y-1.5 sm:space-y-2 border-t border-[#E8EBE8] w-full md:w-auto pt-5 sm:pt-6 md:border-none md:pt-0">
-            <p>© Copyright 2026 • <a href="https://техосмотр-на-доватора.рф" className="hover:text-[#8BBA82] transition-colors underline decoration-[#E8EBE8] underline-offset-4 break-all">техосмотр-на-доватора.рф</a></p>
-            <p><a href="/privacy" className="hover:text-[#8BBA82] transition-colors underline decoration-[#E8EBE8] underline-offset-4">Политика конфиденциальности</a></p>
+          <div className="md:text-right space-y-2 border-t border-[#E8EBE8] w-full md:w-auto pt-5 sm:pt-6 md:border-none md:pt-0">
+            <p>© Copyright 2026 • <a href="https://техосмотр-на-доватора.рф" className="hover:text-[#8BBA82] transition-colors underline decoration-[#E8EBE8] underline-offset-4 break-words">техосмотр-на-доватора.рф</a></p>
+            <p className="flex flex-wrap md:justify-end gap-x-4 gap-y-2 pt-1">
+              <a href="/dublikaty-gosnomerov" className="hover:text-[#8BBA82] transition-colors underline decoration-[#E8EBE8] underline-offset-4">Дубликаты госномеров</a>
+              <a href="/osago" className="hover:text-[#8BBA82] transition-colors underline decoration-[#E8EBE8] underline-offset-4">ОСАГО</a>
+              <a href="/pereoborudovanie" className="hover:text-[#8BBA82] transition-colors underline decoration-[#E8EBE8] underline-offset-4">Переоборудование ТС</a>
+              <a href="/privacy" className="hover:text-[#8BBA82] transition-colors underline decoration-[#E8EBE8] underline-offset-4">Политика конфиденциальности</a>
+            </p>
           </div>
         </div>
       </motion.footer>
